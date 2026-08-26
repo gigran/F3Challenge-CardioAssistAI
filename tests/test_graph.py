@@ -1,0 +1,143 @@
+"""Testes da orquestração e da camada de segurança do LangGraph."""
+
+import pytest
+from langchain_core.documents import Document
+
+from app import graph as graph_module
+from app.graph import (
+    GraphState,
+    detect_safety_alerts,
+    get_graph,
+    run_graph,
+    safety_node,
+)
+
+
+@pytest.mark.parametrize(
+    "question",
+    [
+        "Paciente sintético com pressão 190/125.",
+        "Paciente sintético com pressão 180 x 110.",
+        "Paciente sintético com pressão 170 por 120.",
+    ],
+)
+def test_detecta_pressao_muito_elevada_em_formatos_diferentes(
+    question: str,
+) -> None:
+    """Reconhece pressão sistólica ou diastólica acima do limite de alerta."""
+    severe_pressure, symptoms = detect_safety_alerts(question)
+
+    assert severe_pressure is True
+    assert symptoms == []
+
+
+def test_detecta_sintomas_com_e_sem_acentos() -> None:
+    """Normaliza o texto antes de procurar sinais de alerta."""
+    severe_pressure, symptoms = detect_safety_alerts(
+        "Paciente com dor torácica, confusao e visão turva."
+    )
+
+    assert severe_pressure is False
+    assert symptoms == ["dor torácica", "confusão", "visão turva"]
+
+
+def test_classifica_emergencia_e_prioriza_atendimento() -> None:
+    """Gera alerta imediato quando a pergunta informa sintomas relevantes."""
+    state: GraphState = {
+        "question": "Paciente sintético com pressão 190/125 e dor torácica.",
+        "answer": "Resposta original do modelo.",
+    }
+
+    result = safety_node(state)
+
+    assert result["safety_status"] == "emergencia"
+    assert result["safety_alerts"] == [
+        "pressão arterial muito elevada",
+        "dor torácica",
+    ]
+    assert result["answer"].startswith("ALERTA DE SEGURANÇA")
+    assert "não deve atrasar o atendimento" in result["answer"]
+    assert result["requires_human_review"] is True
+
+
+def test_classifica_atencao_quando_apenas_pressao_e_muito_elevada() -> None:
+    """Diferencia pressão muito elevada sem sintomas declarados."""
+    state: GraphState = {
+        "question": "Paciente sintético com pressão 190/125 e sem outros dados.",
+        "answer": "Resposta original do modelo.",
+    }
+
+    result = safety_node(state)
+
+    assert result["safety_status"] == "atencao"
+    assert result["safety_alerts"] == ["pressão arterial muito elevada"]
+    assert result["answer"].startswith("ATENÇÃO")
+    assert result["requires_human_review"] is True
+
+
+def test_exige_revisao_mesmo_sem_alertas_detectados() -> None:
+    """Mantém revisão humana obrigatória em respostas sem alerta automático."""
+    state: GraphState = {
+        "question": "Pergunta educacional sobre acompanhamento da hipertensão.",
+        "answer": "Resposta original do modelo.",
+    }
+
+    result = safety_node(state)
+
+    assert result == {
+        "answer": "Resposta original do modelo.",
+        "safety_alerts": [],
+        "safety_status": "revisao_obrigatoria",
+        "requires_human_review": True,
+    }
+
+
+def test_rejeita_pergunta_vazia_antes_de_executar_o_grafo() -> None:
+    """Impede a execução do fluxo quando não existe uma pergunta."""
+    with pytest.raises(ValueError, match="A pergunta não pode estar vazia"):
+        run_graph("   ")
+
+
+def test_grafo_compilado_contem_os_tres_nos() -> None:
+    """Confirma a topologia principal do fluxo."""
+    drawable_graph = get_graph().get_graph()
+
+    assert {"retrieve", "generate", "safety"} <= set(drawable_graph.nodes)
+    mermaid = drawable_graph.draw_mermaid()
+    assert "retrieve" in mermaid
+    assert "generate" in mermaid
+    assert "safety" in mermaid
+
+
+def test_executa_fluxo_com_recuperacao_e_geracao_simuladas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Executa o LangGraph sem acessar modelos ou serviços externos."""
+    document = Document(
+        page_content="Contexto sintético sobre hipertensão.",
+        metadata={"source": "data/knowledge_base/hipertensao.md"},
+    )
+
+    def fake_retrieve_node(_state: GraphState) -> GraphState:
+        return {
+            "documents": [document],
+            "sources": ["data/knowledge_base/hipertensao.md"],
+        }
+
+    def fake_generate_node(_state: GraphState) -> GraphState:
+        return {"answer": "Resposta simulada pelo teste."}
+
+    monkeypatch.setattr(graph_module, "retrieve_node", fake_retrieve_node)
+    monkeypatch.setattr(graph_module, "generate_node", fake_generate_node)
+    get_graph.cache_clear()
+
+    try:
+        result = run_graph("Paciente sintético com pressão 190/125 e dor torácica.")
+    finally:
+        get_graph.cache_clear()
+
+    assert result["answer"].startswith("ALERTA DE SEGURANÇA")
+    assert "Resposta simulada pelo teste." in result["answer"]
+    assert result["sources"] == ["data/knowledge_base/hipertensao.md"]
+    assert result["safety_status"] == "emergencia"
+    assert result["requires_human_review"] is True

@@ -153,6 +153,34 @@ Para desativar o ambiente virtual:
 deactivate
 ```
 
+## Executando a API
+
+Com o ambiente virtual ativo e o terminal aberto na raiz do projeto, execute:
+
+```powershell
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+A API ficará disponível nos seguintes endereços:
+
+- apresentação: <http://127.0.0.1:8000/>;
+- verificação de saúde: <http://127.0.0.1:8000/health>;
+- documentação Swagger: <http://127.0.0.1:8000/docs>;
+- especificação OpenAPI: <http://127.0.0.1:8000/openapi.json>.
+
+Resposta esperada em `GET /health`:
+
+```json
+{
+  "status": "saudável",
+  "ambiente": "development",
+  "provedor_llm": "ollama"
+}
+```
+
+Para encerrar a API, pressione `Ctrl+C` no terminal em que o Uvicorn está sendo
+executado.
+
 ## Validação da instalação
 
 Com o ambiente virtual ativo, execute:
@@ -169,17 +197,44 @@ O primeiro comando deverá informar:
 No broken requirements found.
 ```
 
-Ainda não há uma API ou interface para iniciar. Os respectivos comandos serão
-adicionados quando esses componentes forem criados.
+Formate e verifique o código:
+
+```powershell
+python -m ruff format app tests
+python -m ruff check app tests
+python -m ruff format --check app tests
+```
+
+Execute todos os testes automatizados:
+
+```powershell
+python -m pytest -v
+```
+
+Resultado esperado na etapa atual:
+
+```text
+2 passed
+```
+
+Os testes utilizam o `TestClient` do FastAPI e não precisam que o Uvicorn esteja em
+execução.
 
 ## Estrutura atual
 
 ```text
 F3Challenge-CardioAssistAI/
+├── .gitattributes
 ├── .env.example
 ├── .gitignore
 ├── README.md
-└── requirements.txt
+├── requirements.txt
+├── app/
+│   ├── __init__.py
+│   ├── config.py
+│   └── main.py
+└── tests/
+    └── test_main.py
 ```
 
 A estrutura será expandida arquivo por arquivo, sem criar antecipadamente módulos que
@@ -197,8 +252,9 @@ ainda não serão utilizados.
 
 ## Status
 
-Projeto em construção. Configuração inicial do repositório e das dependências em
-andamento.
+Projeto em construção. A configuração inicial, a primeira API FastAPI e seus testes
+automatizados estão concluídos. A interface Streamlit, o PostgreSQL, o RAG, o
+LangGraph e a integração com as LLMs ainda serão implementados.
 
 ## Autores
 

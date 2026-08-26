@@ -1,0 +1,25 @@
+# F3Challenge-CardioAssistAI
+# Dependencias diretas da primeira versao didatica do projeto.
+# Ambiente-alvo: Python 3.12.10
+
+# API e interface
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+streamlit==1.62.0
+
+# LangChain, LangGraph e provedores de modelos
+langchain==1.3.17
+langgraph==1.2.11
+langchain-openai==1.6.0
+langchain-ollama==1.1.0
+langsmith==0.11.1
+
+# PostgreSQL e RAG com vetores
+langchain-postgres==0.0.17
+
+# Configuracao por variaveis de ambiente
+python-dotenv==1.2.3
+
+# Testes e qualidade de codigo
+pytest==9.1.1
+ruff==0.16.4

@@ -1,0 +1,57 @@
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+
+# Ambiente virtual
+.venv/
+venv/
+
+# Cache e arquivos gerados pelo Python
+__pycache__/
+*.py[cod]
+
+# Testes e qualidade
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Empacotamento
+*.egg-info/
+build/
+dist/
+
+# Editores e sistema operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs e arquivos temporários
+logs/
+*.log
+tmp/
+temp/
+
+# PostgreSQL local e volumes Docker
+postgres_data/
+data/postgres/
+
+# Modelos, adapters e checkpoints de treinamento
+models/
+adapters/
+checkpoints/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Configuração local do Docker Compose
+docker-compose.override.yml

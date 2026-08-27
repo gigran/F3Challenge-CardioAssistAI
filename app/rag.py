@@ -5,12 +5,13 @@ from pathlib import Path
 
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
-from langchain_core.vectorstores import InMemoryVectorStore, VectorStoreRetriever
+from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_ollama import OllamaEmbeddings
 from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.config import PROJECT_ROOT, Settings, get_settings
+from app.vector_store import create_in_memory_vector_store, create_retriever
 
 KNOWLEDGE_BASE_DIRECTORY = PROJECT_ROOT / "data" / "knowledge_base"
 
@@ -54,16 +55,24 @@ def load_knowledge_documents(
         )
 
     documents: list[Document] = []
+
     for document_path in document_paths:
         content = document_path.read_text(encoding="utf-8")
         metadata, body = _separate_front_matter(content)
+
         metadata.update(
             {
                 "source": document_path.relative_to(PROJECT_ROOT).as_posix(),
                 "file_name": document_path.name,
             }
         )
-        documents.append(Document(page_content=body, metadata=metadata))
+
+        documents.append(
+            Document(
+                page_content=body,
+                metadata=metadata,
+            )
+        )
 
     return documents
 
@@ -76,6 +85,7 @@ def split_documents(
     """Divide documentos em trechos menores, preservando seus metadados."""
     if chunk_size <= 0:
         raise ValueError("chunk_size deve ser maior que zero.")
+
     if chunk_overlap < 0 or chunk_overlap >= chunk_size:
         raise ValueError("chunk_overlap não pode ser negativo nem alcançar chunk_size.")
 
@@ -85,6 +95,7 @@ def split_documents(
         separators=["\n## ", "\n### ", "\n\n", "\n", " ", ""],
         add_start_index=True,
     )
+
     return splitter.split_documents(documents)
 
 
@@ -99,6 +110,7 @@ def create_embeddings(settings: Settings | None = None) -> Embeddings:
         )
 
     api_key = current_settings.openai_api_key
+
     if not api_key or api_key.startswith("substitua-"):
         raise ValueError(
             "OPENAI_API_KEY deve ser configurada para utilizar embeddings da OpenAI."
@@ -110,15 +122,15 @@ def create_embeddings(settings: Settings | None = None) -> Embeddings:
     )
 
 
-def build_vector_store() -> InMemoryVectorStore:
+def build_vector_store():
     """Indexa os documentos e devolve um banco vetorial em memória."""
     documents = load_knowledge_documents()
     chunks = split_documents(documents)
     embeddings = create_embeddings()
 
-    return InMemoryVectorStore.from_documents(
+    return create_in_memory_vector_store(
         documents=chunks,
-        embedding=embeddings,
+        embeddings=embeddings,
     )
 
 
@@ -127,12 +139,17 @@ def get_retriever() -> VectorStoreRetriever:
     """Cria uma única instância do recuperador durante a execução."""
     settings = get_settings()
     vector_store = build_vector_store()
-    return vector_store.as_retriever(search_kwargs={"k": settings.rag_top_k})
+
+    return create_retriever(
+        vector_store=vector_store,
+        k=settings.rag_top_k,
+    )
 
 
 def retrieve_documents(question: str) -> list[Document]:
     """Recupera os trechos mais relacionados à pergunta informada."""
     normalized_question = question.strip()
+
     if not normalized_question:
         raise ValueError("A pergunta não pode estar vazia.")
 

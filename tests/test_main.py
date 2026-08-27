@@ -1,7 +1,9 @@
-"""Testes dos endpoints básicos da API."""
+"""Testes dos endpoints da API."""
 
 from fastapi.testclient import TestClient
+from pytest import MonkeyPatch
 
+import app.main as main_module
 from app.main import app, settings
 
 client = TestClient(app)
@@ -28,3 +30,82 @@ def test_health_retorna_configuracoes_basicas() -> None:
         "ambiente": settings.app_env,
         "provedor_llm": settings.llm_provider,
     }
+
+
+def test_assist_retorna_resposta_do_fluxo_simulado(monkeypatch: MonkeyPatch) -> None:
+    """Verifica o contrato do endpoint sem executar Ollama ou OpenAI."""
+    graph_result = {
+        "answer": "O caso sintético exige avaliação médica imediata.",
+        "sources": ["data/knowledge_base/hipertensao.md"],
+        "safety_alerts": [
+            "pressão arterial muito elevada",
+            "dor torácica",
+        ],
+        "safety_status": "emergencia",
+        "requires_human_review": True,
+    }
+
+    monkeypatch.setattr(main_module, "run_graph", lambda _question: graph_result)
+
+    response = client.post(
+        "/assist",
+        json={
+            "question": (
+                "Paciente sintético com pressão 190/125 e dor torácica. "
+                "Quais são os sinais de alerta?"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json() == graph_result
+
+
+def test_assist_repassa_pergunta_sem_espacos_externos(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Confirma que a pergunta é normalizada antes de chegar ao grafo."""
+    received_questions: list[str] = []
+    graph_result = {
+        "answer": "Resposta simulada.",
+        "sources": [],
+        "safety_alerts": [],
+        "safety_status": "revisao_obrigatoria",
+        "requires_human_review": True,
+    }
+
+    def fake_run_graph(question: str) -> dict[str, object]:
+        received_questions.append(question)
+        return graph_result
+
+    monkeypatch.setattr(main_module, "run_graph", fake_run_graph)
+
+    response = client.post(
+        "/assist",
+        json={"question": "  Paciente sintético com hipertensão.  "},
+    )
+
+    assert response.status_code == 200
+    assert received_questions == ["Paciente sintético com hipertensão."]
+
+
+def test_assist_rejeita_pergunta_vazia() -> None:
+    """Verifica a validação de uma pergunta composta apenas por espaços."""
+    response = client.post("/assist", json={"question": "  "})
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "question"]
+
+
+def test_assist_rejeita_campo_desconhecido() -> None:
+    """Evita a aceitação silenciosa de campos não previstos no contrato."""
+    response = client.post(
+        "/assist",
+        json={
+            "question": "Paciente sintético com hipertensão.",
+            "patient_name": "Nome não permitido",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "patient_name"]

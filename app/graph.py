@@ -20,13 +20,31 @@ PRESSURE_PATTERN = re.compile(
 ALERT_TERMS = {
     "dor toracica": "dor torácica",
     "dor no peito": "dor no peito",
+    "aperto no peito": "aperto no peito",
+    "pressao no peito": "pressão no peito",
+    "peso no peito": "peso no peito",
+    "desconforto toracico": "desconforto torácico",
+    "dor irradiando para o braco": "dor irradiando para o braço",
+    "dor irradiada para o braco": "dor irradiada para o braço",
+    "dor irradiando para a mandibula": "dor irradiando para a mandíbula",
+    "dor irradiada para a mandibula": "dor irradiada para a mandíbula",
+    "dor subita e intensa": "dor súbita e intensa",
+    "dor irradiando para o dorso": "dor irradiando para o dorso",
+    "dor irradiada para o dorso": "dor irradiada para o dorso",
     "falta de ar": "falta de ar",
+    "suor frio": "suor frio",
+    "sudorese": "sudorese",
+    "palidez": "palidez",
+    "nausea": "náusea",
+    "vomito": "vômito",
+    "palpitacao": "palpitação",
     "confusao": "confusão",
     "alteracao neurologica": "alteração neurológica",
     "fraqueza em um lado": "fraqueza em um lado do corpo",
     "alteracao visual": "alteração visual",
     "visao turva": "visão turva",
     "desmaio": "desmaio",
+    "sincope": "síncope",
     "convulsao": "convulsão",
 }
 
@@ -37,6 +55,7 @@ class GraphInput(TypedDict):
     """Entrada pública do grafo."""
 
     question: str
+    llm_provider: str
 
 
 class GraphOutput(TypedDict):
@@ -53,6 +72,7 @@ class GraphState(TypedDict, total=False):
     """Estado compartilhado entre os nós do LangGraph."""
 
     question: str
+    llm_provider: str
     documents: list[Document]
     answer: str
     sources: list[str]
@@ -107,7 +127,7 @@ def generate_node(state: GraphState) -> GraphState:
     """Gera uma resposta usando os documentos recuperados."""
     documents = state.get("documents", [])
     context = format_documents(documents)
-    answer = get_generation_chain().invoke(
+    answer = get_generation_chain(state["llm_provider"]).invoke(
         {
             "question": state["question"],
             "context": context,
@@ -174,11 +194,18 @@ def get_graph() -> CompiledStateGraph:
     return builder.compile()
 
 
-def run_graph(question: str) -> GraphOutput:
+def run_graph(question: str, llm_provider: str = "ollama") -> GraphOutput:
     """Executa o fluxo completo e devolve somente a saída pública."""
     normalized_question = question.strip()
     if not normalized_question:
         raise ValueError("A pergunta não pode estar vazia.")
+    if llm_provider not in {"ollama", "openai"}:
+        raise ValueError("llm_provider deve ser 'ollama' ou 'openai'.")
 
-    result = get_graph().invoke({"question": normalized_question})
+    result = get_graph().invoke(
+        {
+            "question": normalized_question,
+            "llm_provider": llm_provider,
+        }
+    )
     return cast(GraphOutput, result)

@@ -45,7 +45,11 @@ def test_assist_retorna_resposta_do_fluxo_simulado(monkeypatch: MonkeyPatch) -> 
         "requires_human_review": True,
     }
 
-    monkeypatch.setattr(main_module, "run_graph", lambda _question: graph_result)
+    monkeypatch.setattr(
+        main_module,
+        "run_graph",
+        lambda _question, _llm_provider: graph_result,
+    )
 
     response = client.post(
         "/assist",
@@ -65,7 +69,7 @@ def test_assist_repassa_pergunta_sem_espacos_externos(
     monkeypatch: MonkeyPatch,
 ) -> None:
     """Confirma que a pergunta é normalizada antes de chegar ao grafo."""
-    received_questions: list[str] = []
+    received_requests: list[tuple[str, str]] = []
     graph_result = {
         "answer": "Resposta simulada.",
         "sources": [],
@@ -74,8 +78,8 @@ def test_assist_repassa_pergunta_sem_espacos_externos(
         "requires_human_review": True,
     }
 
-    def fake_run_graph(question: str) -> dict[str, object]:
-        received_questions.append(question)
+    def fake_run_graph(question: str, llm_provider: str) -> dict[str, object]:
+        received_requests.append((question, llm_provider))
         return graph_result
 
     monkeypatch.setattr(main_module, "run_graph", fake_run_graph)
@@ -86,7 +90,52 @@ def test_assist_repassa_pergunta_sem_espacos_externos(
     )
 
     assert response.status_code == 200
-    assert received_questions == ["Paciente sintético com hipertensão."]
+    assert received_requests == [("Paciente sintético com hipertensão.", "ollama")]
+
+
+def test_assist_repassa_provedor_openai_ao_grafo(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    """Encaminha a seleção da interface sem alterar o provedor dos embeddings."""
+    received_requests: list[tuple[str, str]] = []
+    graph_result = {
+        "answer": "Resposta simulada pela OpenAI.",
+        "sources": [],
+        "safety_alerts": [],
+        "safety_status": "revisao_obrigatoria",
+        "requires_human_review": True,
+    }
+
+    def fake_run_graph(question: str, llm_provider: str) -> dict[str, object]:
+        received_requests.append((question, llm_provider))
+        return graph_result
+
+    monkeypatch.setattr(main_module, "run_graph", fake_run_graph)
+
+    response = client.post(
+        "/assist",
+        json={
+            "question": "Paciente sintético com hipertensão.",
+            "llm_provider": "openai",
+        },
+    )
+
+    assert response.status_code == 200
+    assert received_requests == [("Paciente sintético com hipertensão.", "openai")]
+
+
+def test_assist_rejeita_provedor_desconhecido() -> None:
+    """Restringe a seleção aos provedores suportados pela aplicação."""
+    response = client.post(
+        "/assist",
+        json={
+            "question": "Paciente sintético com hipertensão.",
+            "llm_provider": "provedor-invalido",
+        },
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["loc"] == ["body", "llm_provider"]
 
 
 def test_assist_rejeita_pergunta_vazia() -> None:

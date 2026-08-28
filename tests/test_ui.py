@@ -58,12 +58,16 @@ def test_envia_pergunta_e_retorna_resposta(
     result = request_assistance(
         "http://127.0.0.1:8000/",
         "Paciente sintético com hipertensão.",
+        "openai",
     )
 
     assert result == expected_result
     assert received_request == {
         "url": "http://127.0.0.1:8000/assist",
-        "json": {"question": "Paciente sintético com hipertensão."},
+        "json": {
+            "question": "Paciente sintético com hipertensão.",
+            "llm_provider": "openai",
+        },
         "timeout": 300.0,
     }
 
@@ -76,7 +80,11 @@ def test_propaga_erro_http_da_api(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ui.httpx, "post", fake_post)
 
     with pytest.raises(httpx.HTTPStatusError):
-        request_assistance("http://127.0.0.1:8000", "Pergunta sintética.")
+        request_assistance(
+            "http://127.0.0.1:8000",
+            "Pergunta sintética.",
+            "ollama",
+        )
 
 
 def test_propaga_timeout_da_api(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -89,7 +97,11 @@ def test_propaga_timeout_da_api(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(ui.httpx, "post", fake_post)
 
     with pytest.raises(httpx.ReadTimeout, match="Tempo limite simulado"):
-        request_assistance("http://127.0.0.1:8000", "Pergunta sintética.")
+        request_assistance(
+            "http://127.0.0.1:8000",
+            "Pergunta sintética.",
+            "ollama",
+        )
 
 
 def test_rejeita_json_com_tipo_inesperado(
@@ -102,7 +114,11 @@ def test_rejeita_json_com_tipo_inesperado(
     monkeypatch.setattr(ui.httpx, "post", fake_post)
 
     with pytest.raises(TypeError, match="JSON em formato inesperado"):
-        request_assistance("http://127.0.0.1:8000", "Pergunta sintética.")
+        request_assistance(
+            "http://127.0.0.1:8000",
+            "Pergunta sintética.",
+            "ollama",
+        )
 
 
 def test_rejeita_conteudo_que_nao_e_json(
@@ -115,4 +131,8 @@ def test_rejeita_conteudo_que_nao_e_json(
     monkeypatch.setattr(ui.httpx, "post", fake_post)
 
     with pytest.raises(ValueError):
-        request_assistance("http://127.0.0.1:8000", "Pergunta sintética.")
+        request_assistance(
+            "http://127.0.0.1:8000",
+            "Pergunta sintética.",
+            "ollama",
+        )

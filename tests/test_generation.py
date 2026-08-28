@@ -93,9 +93,13 @@ def test_gera_resposta_estruturada_com_fontes_unicas(
 
     fake_chain = RunnableLambda(fake_generation)
     monkeypatch.setattr(generation, "retrieve_documents", lambda _question: documents)
-    monkeypatch.setattr(generation, "get_generation_chain", lambda: fake_chain)
+    monkeypatch.setattr(
+        generation,
+        "get_generation_chain",
+        lambda _llm_provider: fake_chain,
+    )
 
-    result = generate_answer("Quais são os sinais de alerta?")
+    result = generate_answer("Quais são os sinais de alerta?", "ollama")
 
     assert received_input["question"] == "Quais são os sinais de alerta?"
     assert "Primeiro trecho" in received_input["context"]

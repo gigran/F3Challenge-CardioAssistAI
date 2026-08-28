@@ -13,6 +13,13 @@ class SafetyStatus(StrEnum):
     EMERGENCY = "emergencia"
 
 
+class LLMProvider(StrEnum):
+    """Provedores disponíveis para geração de respostas."""
+
+    OLLAMA = "ollama"
+    OPENAI = "openai"
+
+
 class AssistRequest(BaseModel):
     """Pergunta e contexto sintético enviados ao CardioAssist AI."""
 
@@ -31,6 +38,10 @@ class AssistRequest(BaseModel):
                 "Quais são os sinais de alerta?"
             ),
         ],
+    )
+    llm_provider: LLMProvider = Field(
+        default=LLMProvider.OLLAMA,
+        description="Provedor utilizado somente para gerar a resposta.",
     )
 
 

@@ -37,5 +37,5 @@ def read_health() -> dict[str, str]:
 @app.post("/assist", response_model=AssistResponse, tags=["Assistência"])
 def assist(request: AssistRequest) -> AssistResponse:
     """Executa o fluxo RAG e devolve uma resposta para revisão humana."""
-    result = run_graph(request.question)
+    result = run_graph(request.question, request.llm_provider.value)
     return AssistResponse.model_validate(result)

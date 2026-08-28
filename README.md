@@ -1,6 +1,6 @@
 # F3Challenge — CardioAssist AI
 
-Assistente de apoio à decisão clínica em cardiologia, desenvolvido como
+Assistente educacional de apoio à decisão clínica em cardiologia, desenvolvido como
 Tech Challenge da pós-graduação em Inteligência Artificial para Desenvolvedores.
 
 > [!WARNING]
@@ -25,7 +25,8 @@ inclusão da próxima camada.
 - contratos de entrada e saída com Pydantic;
 - carregamento de documentos Markdown com metadados;
 - divisão de documentos em trechos com `RecursiveCharacterTextSplitter`;
-- embeddings locais com Ollama ou opcionais com OpenAI;
+- embeddings locais fixos com Ollama;
+- seleção da LLM de geração entre Ollama e OpenAI na interface;
 - busca semântica em memória com `InMemoryVectorStore`;
 - geração contextualizada com LCEL e `StrOutputParser`;
 - fluxo de recuperação, geração e segurança com `StateGraph`;
@@ -208,6 +209,16 @@ OLLAMA_CHAT_MODEL="phi3:latest"
 OLLAMA_EMBEDDING_MODEL="nomic-embed-text"
 ```
 
+`LLM_PROVIDER` define somente a opção inicial da interface. Os embeddings permanecem
+no Ollama independentemente da LLM escolhida para gerar a resposta.
+
+Para habilitar a opção OpenAI, configure também:
+
+```env
+OPENAI_API_KEY="substitua-pela-chave-real-no-arquivo-env"
+OPENAI_CHAT_MODEL="gpt-5-mini"
+```
+
 Teste o modelo:
 
 ```powershell
@@ -254,6 +265,10 @@ Paciente sintético com pressão 190/125 e dor torácica. Quais são os sinais d
 A primeira execução pode demorar enquanto o Ollama carrega os modelos na memória.
 A interface aguarda até 300 segundos pela resposta da API.
 
+Na barra lateral, selecione `Ollama — local e gratuito` ou `OpenAI — API paga`. Essa
+seleção altera somente a LLM de geração; a recuperação continua usando
+`nomic-embed-text` no Ollama.
+
 ## Endpoints
 
 ### `GET /`
@@ -278,7 +293,8 @@ Corpo da requisição:
 
 ```json
 {
-  "question": "Paciente sintético com pressão 190/125 e dor torácica. Quais são os sinais de alerta?"
+  "question": "Paciente sintético com pressão 190/125 e dor torácica. Quais são os sinais de alerta?",
+  "llm_provider": "ollama"
 }
 ```
 
@@ -374,6 +390,7 @@ F3Challenge-CardioAssistAI/
 │   └── ui.py
 ├── data/
 │   └── knowledge_base/
+│       ├── dor_toracica.md
 │       └── hipertensao.md
 └── tests/
     ├── test_generation.py
@@ -396,7 +413,7 @@ F3Challenge-CardioAssistAI/
 
 ## Limitações atuais
 
-- a base possui inicialmente apenas um resumo educacional sobre hipertensão;
+- a base possui resumos educacionais sobre hipertensão e dor torácica;
 - o armazenamento vetorial é recriado em memória;
 - ainda não há persistência de pacientes, exames ou conversas;
 - as fontes exibidas indicam os documentos recuperados, não garantem que cada frase

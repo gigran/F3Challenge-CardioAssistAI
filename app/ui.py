@@ -14,11 +14,18 @@ REQUEST_TIMEOUT_SECONDS = 300.0
 logger = logging.getLogger(__name__)
 
 
-def request_assistance(api_url: str, question: str) -> dict[str, Any]:
+def request_assistance(
+    api_url: str,
+    question: str,
+    llm_provider: str,
+) -> dict[str, Any]:
     """Envia a pergunta para a API e devolve a resposta validada como JSON."""
     response = httpx.post(
         f"{api_url.rstrip('/')}/assist",
-        json={"question": question},
+        json={
+            "question": question,
+            "llm_provider": llm_provider,
+        },
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
     response.raise_for_status()
@@ -81,7 +88,22 @@ def main() -> None:
     with st.sidebar:
         st.header("Configuração")
         api_url = st.text_input("Endereço da API", value=DEFAULT_API_URL)
-        st.caption(f"Provedor configurado: {settings.llm_provider}")
+        provider_options = ["ollama", "openai"]
+        default_provider_index = (
+            provider_options.index(settings.llm_provider)
+            if settings.llm_provider in provider_options
+            else 0
+        )
+        llm_provider = st.selectbox(
+            "Modelo de linguagem",
+            options=provider_options,
+            index=default_provider_index,
+            format_func=lambda provider: {
+                "ollama": "Ollama — local e gratuito",
+                "openai": "OpenAI — API paga",
+            }[provider],
+        )
+        st.caption("Embeddings: Ollama — nomic-embed-text")
 
     with st.form("assist_form"):
         question = st.text_area(
@@ -109,7 +131,11 @@ def main() -> None:
 
     try:
         with st.spinner("Consultando o fluxo RAG e o modelo de linguagem..."):
-            result = request_assistance(api_url, normalized_question)
+            result = request_assistance(
+                api_url,
+                normalized_question,
+                llm_provider,
+            )
     except httpx.ReadTimeout:
         logger.exception(
             "A API excedeu o limite de %.0f segundos para responder.",
@@ -117,7 +143,7 @@ def main() -> None:
         )
         st.error(
             "A análise ultrapassou o tempo máximo de 300 segundos. "
-            "Confirme se o Ollama e o modelo configurado estão funcionando."
+            "Confirme se o provedor selecionado está configurado e disponível."
         )
         return
     except httpx.ConnectError:

@@ -41,6 +41,51 @@ def test_detecta_sintomas_com_e_sem_acentos() -> None:
     assert symptoms == ["dor torácica", "confusão", "visão turva"]
 
 
+@pytest.mark.parametrize(
+    ("question", "expected_alert"),
+    [
+        ("Paciente sintético com aperto no peito.", "aperto no peito"),
+        ("Paciente sintético com pressão no peito.", "pressão no peito"),
+        (
+            "Paciente sintético com dor irradiando para o braço.",
+            "dor irradiando para o braço",
+        ),
+        ("Paciente sintético com suor frio.", "suor frio"),
+        ("Paciente sintético com palidez e náusea.", "palidez"),
+        ("Paciente sintético apresentou vômito.", "vômito"),
+        ("Paciente sintético apresentou síncope.", "síncope"),
+        (
+            "Paciente sintético com dor súbita e intensa irradiando para o dorso.",
+            "dor súbita e intensa",
+        ),
+    ],
+)
+def test_detecta_sinais_associados_a_dor_toracica(
+    question: str,
+    expected_alert: str,
+) -> None:
+    """Reconhece apresentações e sintomas associados a emergências torácicas."""
+    severe_pressure, symptoms = detect_safety_alerts(question)
+
+    assert severe_pressure is False
+    assert expected_alert in symptoms
+
+
+def test_classifica_aperto_no_peito_com_suor_frio_como_emergencia() -> None:
+    """Não depende da LLM para priorizar sinais compatíveis com urgência."""
+    state: GraphState = {
+        "question": "Paciente sintético com aperto no peito e suor frio.",
+        "answer": "Resposta original do modelo.",
+    }
+
+    result = safety_node(state)
+
+    assert result["safety_status"] == "emergencia"
+    assert result["safety_alerts"] == ["aperto no peito", "suor frio"]
+    assert result["answer"].startswith("ALERTA DE SEGURANÇA")
+    assert result["requires_human_review"] is True
+
+
 def test_classifica_emergencia_e_prioriza_atendimento() -> None:
     """Gera alerta imediato quando a pergunta informa sintomas relevantes."""
     state: GraphState = {
@@ -96,6 +141,12 @@ def test_rejeita_pergunta_vazia_antes_de_executar_o_grafo() -> None:
     """Impede a execução do fluxo quando não existe uma pergunta."""
     with pytest.raises(ValueError, match="A pergunta não pode estar vazia"):
         run_graph("   ")
+
+
+def test_rejeita_provedor_desconhecido_antes_de_executar_o_grafo() -> None:
+    """Impede a execução com um provedor que não possui implementação."""
+    with pytest.raises(ValueError, match="llm_provider deve ser"):
+        run_graph("Pergunta sintética.", "provedor-invalido")
 
 
 def test_grafo_compilado_contem_os_tres_nos() -> None:

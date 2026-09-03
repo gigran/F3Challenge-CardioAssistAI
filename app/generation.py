@@ -61,11 +61,21 @@ def format_documents(documents: list[Document]) -> str:
     return "\n\n".join(formatted_chunks)
 
 
-def create_chat_model(settings: Settings | None = None) -> BaseChatModel:
+SUPPORTED_LLM_PROVIDERS = {"ollama", "openai"}
+
+
+def create_chat_model(
+    settings: Settings | None = None,
+    llm_provider: str | None = None,
+) -> BaseChatModel:
     """Cria o modelo de chat configurado para Ollama ou OpenAI."""
     current_settings = settings or get_settings()
+    selected_provider = llm_provider or current_settings.llm_provider
 
-    if current_settings.llm_provider == "ollama":
+    if selected_provider not in SUPPORTED_LLM_PROVIDERS:
+        raise ValueError("llm_provider deve ser 'ollama' ou 'openai'.")
+
+    if selected_provider == "ollama":
         return ChatOllama(
             model=current_settings.ollama_chat_model,
             base_url=current_settings.ollama_base_url,
@@ -85,8 +95,8 @@ def create_chat_model(settings: Settings | None = None) -> BaseChatModel:
     )
 
 
-@lru_cache(maxsize=1)
-def get_generation_chain() -> Runnable[dict[str, str], str]:
+@lru_cache(maxsize=2)
+def get_generation_chain(llm_provider: str) -> Runnable[dict[str, str], str]:
     """Monta e mantém em cache a cadeia LCEL de geração."""
     prompt = ChatPromptTemplate.from_messages(
         [
@@ -102,18 +112,22 @@ def get_generation_chain() -> Runnable[dict[str, str], str]:
         ]
     )
 
-    return prompt | create_chat_model() | StrOutputParser()
+    return prompt | create_chat_model(llm_provider=llm_provider) | StrOutputParser()
 
 
-def generate_answer(question: str) -> GeneratedAnswer:
+def generate_answer(
+    question: str,
+    llm_provider: str | None = None,
+) -> GeneratedAnswer:
     """Recupera o contexto e gera uma resposta acompanhada das fontes."""
     normalized_question = question.strip()
     if not normalized_question:
         raise ValueError("A pergunta não pode estar vazia.")
 
+    selected_provider = llm_provider or get_settings().llm_provider
     documents = retrieve_documents(normalized_question)
     context = format_documents(documents)
-    answer = get_generation_chain().invoke(
+    answer = get_generation_chain(selected_provider).invoke(
         {
             "question": normalized_question,
             "context": context,

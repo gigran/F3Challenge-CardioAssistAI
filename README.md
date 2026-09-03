@@ -5,102 +5,127 @@ Tech Challenge da pós-graduação em Inteligência Artificial para Desenvolvedo
 
 > [!WARNING]
 > Este projeto é um protótipo acadêmico, utiliza somente dados sintéticos e não é um
-> dispositivo médico. Suas respostas não substituem avaliação, diagnóstico ou conduta
-> de um profissional de saúde. Toda resposta deverá passar por validação humana.
+> dispositivo médico. As respostas não substituem avaliação, diagnóstico ou conduta
+> profissional. Toda saída deve passar por validação humana.
 
 ## Objetivo
 
-O CardioAssist AI receberá dados clínicos sintéticos e uma pergunta sobre um paciente,
-consultará seu histórico, exames e protocolos médicos e produzirá uma resposta
-contextualizada, com fontes e alertas de segurança.
+O CardioAssist AI recebe uma pergunta sobre um paciente sintético, recupera trechos
+relevantes de uma base de conhecimento, gera uma resposta contextualizada e aplica
+regras determinísticas de segurança antes de devolver a resposta, as fontes e os
+alertas identificados.
 
-O projeto será construído progressivamente, começando por um RAG simples e funcional.
-Novos componentes serão adicionados somente quando a versão anterior estiver testada.
+O desenvolvimento é incremental: cada componente é implementado e testado antes da
+inclusão da próxima camada.
 
-## Casos de uso planejados
+## Funcionalidades implementadas
 
-- analisar um quadro de hipertensão considerando histórico e exames;
-- destacar fatores de risco e sinais de alerta em relatos de dor torácica;
-- contextualizar resultados de exames com o histórico sintético do paciente;
-- identificar exames pendentes e gerar alertas;
-- registrar a resposta e permitir validação humana.
+- API REST com FastAPI e documentação Swagger;
+- interface web com Streamlit;
+- contratos de entrada e saída com Pydantic;
+- carregamento de documentos Markdown com metadados;
+- divisão de documentos em trechos com `RecursiveCharacterTextSplitter`;
+- embeddings locais fixos com Ollama;
+- seleção da LLM de geração entre Ollama e OpenAI na interface;
+- busca semântica em memória com `InMemoryVectorStore`;
+- geração contextualizada com LCEL e `StrOutputParser`;
+- fluxo de recuperação, geração e segurança com `StateGraph`;
+- identificação determinística de pressão muito elevada e sinais de alerta;
+- fontes incluídas na resposta;
+- revisão humana obrigatória;
+- testes unitários e testes opcionais de integração com Ollama.
 
-## Escopo da primeira versão
+## Casos de uso
 
-A primeira versão terá:
+- analisar um quadro sintético de hipertensão;
+- destacar sinais de alerta associados à dor torácica;
+- contextualizar informações usando documentos recuperados;
+- devolver fontes e alertas para revisão profissional.
 
-- documentos médicos selecionados para a base de conhecimento;
-- pacientes e exames inteiramente sintéticos;
-- recuperação de contexto com RAG;
-- geração local com Ollama ou, opcionalmente, OpenAI;
-- fluxo simples de recuperação, geração e verificação com LangGraph;
-- resposta acompanhada das fontes recuperadas;
-- API com FastAPI;
-- interface com Streamlit;
-- testes básicos.
+Análise estruturada de exames, histórico persistente do paciente e exames pendentes
+permanecem planejados para etapas posteriores.
 
-O fine-tuning com LoRA ou QLoRA será desenvolvido em uma etapa posterior e comparado
-com prompt engineering, few-shot e RAG. Por causa do hardware local, o treinamento
-será executado no Google Colab, Kaggle ou em uma GPU temporária. A inferência continuará
-podendo ser feita localmente com Ollama.
-
-## Arquitetura inicial
+## Arquitetura atual
 
 ```mermaid
-flowchart LR
-    M[Médico] --> UI[Streamlit]
-    UI --> API[FastAPI]
+flowchart TD
+    UI[Streamlit] --> API[FastAPI]
     API --> G[LangGraph]
-    G --> P[(Paciente sintético)]
     G --> R[RAG com LangChain]
-    R --> V[(PostgreSQL + pgvector)]
+    R --> KB[(Markdown em memória)]
     G --> L{Provedor da LLM}
-    L --> O[Ollama local]
+    L --> O[Ollama]
     L --> OA[OpenAI opcional]
-    G --> S[Verificação de segurança]
-    S --> H[Validação humana]
-    H --> UI
+    G --> S[Segurança determinística]
+    S --> UI
 ```
 
-O fluxo será refinado à medida que os módulos forem implementados. No início, ele será
-mantido pequeno para facilitar o aprendizado, os testes e a depuração.
+O fluxo compilado do LangGraph possui três nós:
+
+```text
+retrieve → generate → safety
+```
+
+1. `retrieve` recupera os documentos semanticamente relacionados à pergunta;
+2. `generate` monta o contexto e consulta a LLM usando uma cadeia LCEL;
+3. `safety` identifica sinais críticos e acrescenta alertas determinísticos.
+
+O armazenamento vetorial atual é em memória. PostgreSQL com pgvector será introduzido
+quando adicionarmos pacientes, exames e persistência da base vetorial.
 
 ## Tecnologias
 
 - Python 3.12.10;
 - FastAPI e Uvicorn;
 - Streamlit;
-- LangChain e LangGraph;
+- Pydantic;
+- LangChain e LCEL;
+- LangGraph e `StateGraph`;
 - Ollama e integração opcional com OpenAI;
-- PostgreSQL com extensão pgvector;
-- LangSmith opcional para rastreamento e avaliação;
-- pytest e Ruff;
-- Docker em uma etapa posterior;
-- Hugging Face, PEFT e LoRA/QLoRA na etapa de fine-tuning.
+- HTTPX;
+- pytest;
+- Ruff.
 
-## Requisitos do ambiente
+Tecnologias planejadas para etapas posteriores:
+
+- PostgreSQL e pgvector;
+- checkpoints e persistência do LangGraph;
+- LangSmith para rastreamento e avaliação;
+- Docker;
+- Hugging Face, PEFT e LoRA/QLoRA.
+
+## Ambiente de desenvolvimento
+
+Ambiente utilizado no desenvolvimento:
 
 - Windows 11;
 - Visual Studio Code;
 - Python 3.12.10;
-- Git;
-- Ollama;
-- PostgreSQL com pgvector, que será configurado posteriormente com Docker;
-- conta OpenAI somente se o provedor opcional for utilizado;
-- conta LangSmith somente se o rastreamento remoto for habilitado.
-
-Hardware local informado:
-
-- processador Intel Core i5-1135G7;
+- Intel Core i5-1135G7;
 - 7,74 GB de RAM;
-- Intel Iris Xe Graphics com aproximadamente 2 GB de memória compartilhada.
+- Intel Iris Xe com aproximadamente 2 GB de memória compartilhada.
 
-Esse computador é adequado para o desenvolvimento e para modelos pequenos e
-quantizados no Ollama, mas não é indicado para treinar um modelo com QLoRA.
+Esse hardware é suficiente para desenvolvimento e inferência com modelos pequenos e
+quantizados. Ele não é adequado para treinamento local com QLoRA. Caso o fine-tuning
+seja justificado pelas avaliações, o treinamento será feito no Colab, Kaggle ou em
+uma GPU temporária.
 
-## Configuração inicial no Windows
+## Programas necessários
 
-Abra o PowerShell no terminal do Visual Studio Code e entre no projeto:
+- Git;
+- Python 3.12.10;
+- Visual Studio Code;
+- Ollama;
+- extensão Python da Microsoft para VS Code;
+- extensão Pylance da Microsoft;
+- extensão Ruff da Astral Software.
+
+OpenAI e LangSmith são opcionais e exigem contas e chaves próprias somente quando
+seus respectivos recursos forem habilitados.
+
+## Configuração no Windows
+
+Abra o PowerShell no terminal do VS Code:
 
 ```powershell
 Set-Location C:\Python\F3Challenge-CardioAssistAI
@@ -118,34 +143,35 @@ Ative o ambiente:
 .\.venv\Scripts\Activate.ps1
 ```
 
-Confirme o Python selecionado:
+Confirme o interpretador:
 
 ```powershell
 python --version
 python -c "import sys; print(sys.executable)"
 ```
 
-O executável deve apontar para:
+O executável deverá apontar para:
 
 ```text
 C:\Python\F3Challenge-CardioAssistAI\.venv\Scripts\python.exe
 ```
 
-Instale as dependências:
+Atualize o pip e instale as dependências:
 
 ```powershell
 python -m pip install --upgrade pip
 python -m pip install --requirement requirements.txt
+python -m pip check
 ```
 
-Copie as variáveis de exemplo:
+Crie a configuração local:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-O arquivo `.env` é local e está protegido pelo `.gitignore`. Nunca registre chaves de
-API ou senhas reais no Git.
+O arquivo `.env` está protegido pelo `.gitignore`. Nunca registre chaves, senhas ou
+tokens reais no Git.
 
 Para desativar o ambiente virtual:
 
@@ -153,22 +179,105 @@ Para desativar o ambiente virtual:
 deactivate
 ```
 
-## Executando a API
+## Configuração do Ollama
 
-Com o ambiente virtual ativo e o terminal aberto na raiz do projeto, execute:
+Confirme a instalação:
 
 ```powershell
+ollama --version
+ollama list
+```
+
+Baixe o modelo de embeddings:
+
+```powershell
+ollama pull nomic-embed-text
+```
+
+Para reproduzir o ambiente local utilizado nos testes, use o Phi-3:
+
+```powershell
+ollama pull phi3:latest
+```
+
+Configure no `.env`:
+
+```env
+LLM_PROVIDER="ollama"
+OLLAMA_BASE_URL="http://localhost:11434"
+OLLAMA_CHAT_MODEL="phi3:latest"
+OLLAMA_EMBEDDING_MODEL="nomic-embed-text"
+```
+
+`LLM_PROVIDER` define somente a opção inicial da interface. Os embeddings permanecem
+no Ollama independentemente da LLM escolhida para gerar a resposta.
+
+Para habilitar a opção OpenAI, configure também:
+
+```env
+OPENAI_API_KEY="substitua-pela-chave-real-no-arquivo-env"
+OPENAI_CHAT_MODEL="gpt-5-mini"
+```
+
+Teste o modelo:
+
+```powershell
+ollama run phi3:latest "Responda somente: funcionando"
+```
+
+## Executando a aplicação
+
+FastAPI e Streamlit devem ser executados em terminais separados.
+
+### Terminal 1 — API
+
+```powershell
+Set-Location C:\Python\F3Challenge-CardioAssistAI
+.\.venv\Scripts\Activate.ps1
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-A API ficará disponível nos seguintes endereços:
+Endereços disponíveis:
 
-- apresentação: <http://127.0.0.1:8000/>;
-- verificação de saúde: <http://127.0.0.1:8000/health>;
-- documentação Swagger: <http://127.0.0.1:8000/docs>;
-- especificação OpenAPI: <http://127.0.0.1:8000/openapi.json>.
+- API: <http://127.0.0.1:8000/>;
+- saúde: <http://127.0.0.1:8000/health>;
+- Swagger: <http://127.0.0.1:8000/docs>;
+- OpenAPI: <http://127.0.0.1:8000/openapi.json>.
 
-Resposta esperada em `GET /health`:
+### Terminal 2 — interface
+
+```powershell
+Set-Location C:\Python\F3Challenge-CardioAssistAI
+.\.venv\Scripts\Activate.ps1
+python -m streamlit run app\ui.py
+```
+
+A interface ficará disponível em:
+
+<http://localhost:8501>
+
+Use exclusivamente casos sintéticos, por exemplo:
+
+```text
+Paciente sintético com pressão 190/125 e dor torácica. Quais são os sinais de alerta?
+```
+
+A primeira execução pode demorar enquanto o Ollama carrega os modelos na memória.
+A interface aguarda até 300 segundos pela resposta da API.
+
+Na barra lateral, selecione `Ollama — local e gratuito` ou `OpenAI — API paga`. Essa
+seleção altera somente a LLM de geração; a recuperação continua usando
+`nomic-embed-text` no Ollama.
+
+## Endpoints
+
+### `GET /`
+
+Apresenta a API e o endereço da documentação.
+
+### `GET /health`
+
+Exemplo de resposta:
 
 ```json
 {
@@ -178,26 +287,54 @@ Resposta esperada em `GET /health`:
 }
 ```
 
-Para encerrar a API, pressione `Ctrl+C` no terminal em que o Uvicorn está sendo
-executado.
+### `POST /assist`
 
-## Validação da instalação
+Corpo da requisição:
 
-Com o ambiente virtual ativo, execute:
+```json
+{
+  "question": "Paciente sintético com pressão 190/125 e dor torácica. Quais são os sinais de alerta?",
+  "llm_provider": "ollama"
+}
+```
+
+Estrutura resumida da resposta:
+
+```json
+{
+  "answer": "ALERTA DE SEGURANÇA: ...",
+  "sources": [
+    "data/knowledge_base/hipertensao.md"
+  ],
+  "safety_alerts": [
+    "pressão arterial muito elevada",
+    "dor torácica"
+  ],
+  "safety_status": "emergencia",
+  "requires_human_review": true
+}
+```
+
+No Windows PowerShell 5.1, envie textos acentuados como UTF-8:
 
 ```powershell
-python -m pip check
-python -m pytest --version
-python -m ruff --version
+$body = @{
+    question = "Paciente sintético com pressão 190/125 e dor torácica. Quais são os sinais de alerta?"
+} | ConvertTo-Json
+
+$bodyUtf8 = [System.Text.Encoding]::UTF8.GetBytes($body)
+
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8000/assist" `
+    -Method Post `
+    -ContentType "application/json; charset=utf-8" `
+    -Body $bodyUtf8 `
+    -TimeoutSec 300
 ```
 
-O primeiro comando deverá informar:
+## Testes e qualidade
 
-```text
-No broken requirements found.
-```
-
-Formate e verifique o código:
+Formate e valide o código:
 
 ```powershell
 python -m ruff format app tests
@@ -205,56 +342,113 @@ python -m ruff check app tests
 python -m ruff format --check app tests
 ```
 
-Execute todos os testes automatizados:
+Execute os testes que não dependem do Ollama:
 
 ```powershell
 python -m pytest -v
 ```
 
-Resultado esperado na etapa atual:
+Os testes de integração com o Ollama ficam desabilitados por padrão. Para executá-los
+na sessão atual do PowerShell:
 
-```text
-2 passed
+```powershell
+$env:RUN_OLLAMA_TESTS = "true"
+python -m pytest tests\test_rag.py tests\test_generation.py -v
 ```
 
-Os testes utilizam o `TestClient` do FastAPI e não precisam que o Uvicorn esteja em
-execução.
+Para remover a variável sem gerar erro caso ela não exista:
+
+```powershell
+Remove-Item Env:RUN_OLLAMA_TESTS -ErrorAction SilentlyContinue
+```
+
+Os testes estão separados por responsabilidade:
+
+- `test_main.py`: endpoints e contratos da API;
+- `test_rag.py`: carregamento, divisão, embeddings e recuperação;
+- `test_generation.py`: prompt, cadeia LCEL e geração;
+- `test_graph.py`: fluxo LangGraph e segurança;
+- `test_ui.py`: comunicação HTTP usada pelo Streamlit.
 
 ## Estrutura atual
 
 ```text
 F3Challenge-CardioAssistAI/
-├── .gitattributes
 ├── .env.example
+├── .gitattributes
 ├── .gitignore
 ├── README.md
 ├── requirements.txt
 ├── app/
 │   ├── __init__.py
 │   ├── config.py
-│   └── main.py
+│   ├── generation.py
+│   ├── graph.py
+│   ├── main.py
+│   ├── rag.py
+│   ├── schemas.py
+│   └── ui.py
+├── data/
+│   └── knowledge_base/
+│       ├── dor_toracica.md
+│       └── hipertensao.md
 └── tests/
-    └── test_main.py
+    ├── test_generation.py
+    ├── test_graph.py
+    ├── test_main.py
+    ├── test_rag.py
+    └── test_ui.py
 ```
-
-A estrutura será expandida arquivo por arquivo, sem criar antecipadamente módulos que
-ainda não serão utilizados.
 
 ## Segurança e privacidade
 
-- usar exclusivamente pacientes, históricos e exames sintéticos;
-- não inserir nomes, documentos ou informações reais de pacientes;
-- não armazenar chaves de API no repositório;
-- apresentar fontes utilizadas pelo RAG;
-- indicar quando não houver contexto suficiente;
-- tratar a saída da LLM como sugestão, nunca como diagnóstico definitivo;
-- exigir validação humana antes de aceitar uma resposta clínica.
+- utilizar exclusivamente pacientes, históricos e exames sintéticos;
+- não informar nomes, documentos ou dados reais de pacientes;
+- não registrar perguntas clínicas nos logs técnicos da interface;
+- nunca armazenar chaves ou senhas no repositório;
+- exigir validação humana para todas as respostas;
+- destacar sinais críticos por regras independentes da LLM;
+- apresentar os arquivos recuperados como fontes;
+- tratar a saída do modelo como apoio educacional, nunca como diagnóstico.
+
+## Limitações atuais
+
+- a base possui resumos educacionais sobre hipertensão e dor torácica;
+- o armazenamento vetorial é recriado em memória;
+- ainda não há persistência de pacientes, exames ou conversas;
+- as fontes exibidas indicam os documentos recuperados, não garantem que cada frase
+  gerada esteja integralmente fundamentada;
+- modelos pequenos, como Phi-3, podem produzir erros de escrita, interpretações
+  imprecisas ou atribuições não presentes no documento;
+- a camada determinística reconhece somente os padrões implementados;
+- o sistema não foi validado para uso clínico real.
+
+## Fine-tuning
+
+O fine-tuning ainda não foi implementado. Antes dessa etapa, o projeto comparará a
+versão atual com melhorias de prompt, few-shot e RAG. LoRA ou QLoRA somente será usado
+se as avaliações mostrarem um problema de comportamento ou formato que não seja
+resolvido adequadamente pelo contexto recuperado.
+
+Conhecimento médico atualizado deve permanecer no RAG. O fine-tuning não deve ser
+utilizado como substituto de uma base documental rastreável.
+
+## Próximas etapas
+
+1. ampliar a base sintética e documental;
+2. adicionar avaliação de recuperação e fidelidade das respostas;
+3. implementar persistência com PostgreSQL e pgvector;
+4. adicionar histórico sintético e exames;
+5. configurar checkpoints do LangGraph;
+6. habilitar rastreamento e avaliação com LangSmith;
+7. comparar prompt, few-shot, RAG e LoRA/QLoRA;
+8. configurar Docker e instruções de deploy.
 
 ## Status
 
-Projeto em construção. A configuração inicial, a primeira API FastAPI e seus testes
-automatizados estão concluídos. A interface Streamlit, o PostgreSQL, o RAG, o
-LangGraph e a integração com as LLMs ainda serão implementados.
+A primeira vertical funcional está concluída: interface, API, RAG, geração, fluxo
+LangGraph, segurança, fontes e testes automatizados. O projeto continua em evolução
+incremental.
 
 ## Autores
 

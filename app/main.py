@@ -1,16 +1,16 @@
 """Ponto de entrada da API do CardioAssist AI."""
 
-"""python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"""
-
 from fastapi import FastAPI
 
 from app.config import get_settings
+from app.graph import run_graph
+from app.schemas import AssistRequest, AssistResponse
 
 settings = get_settings()
 
 app = FastAPI(
     title=settings.app_name,
-    description="API de apoio à decisão clínica em cardiologia.",
+    description="API educacional de apoio à decisão clínica em cardiologia.",
     version="0.1.0",
 )
 
@@ -32,3 +32,10 @@ def read_health() -> dict[str, str]:
         "ambiente": settings.app_env,
         "provedor_llm": settings.llm_provider,
     }
+
+
+@app.post("/assist", response_model=AssistResponse, tags=["Assistência"])
+def assist(request: AssistRequest) -> AssistResponse:
+    """Executa o fluxo RAG e devolve uma resposta para revisão humana."""
+    result = run_graph(request.question, request.llm_provider.value)
+    return AssistResponse.model_validate(result)

@@ -4,6 +4,7 @@
 
 # API e interface
 fastapi==0.141.1
+pydantic==2.13.4
 uvicorn[standard]==0.52.4
 streamlit==1.62.0
 

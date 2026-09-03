@@ -59,7 +59,6 @@ class Settings:
     ollama_embedding_model: str
     openai_api_key: str
     openai_chat_model: str
-    openai_embedding_model: str
     database_url: str
     rag_top_k: int
     langsmith_tracing: bool
@@ -89,9 +88,6 @@ def get_settings() -> Settings:
         ollama_embedding_model=os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text"),
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
         openai_chat_model=os.getenv("OPENAI_CHAT_MODEL", "gpt-5-mini"),
-        openai_embedding_model=os.getenv(
-            "OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"
-        ),
         database_url=os.getenv(
             "DATABASE_URL",
             "postgresql+psycopg://cardioassist:senha_local@localhost:5432/cardioassist",

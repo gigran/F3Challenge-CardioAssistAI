@@ -7,7 +7,6 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_ollama import OllamaEmbeddings
-from langchain_openai import OpenAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from app.config import PROJECT_ROOT, Settings, get_settings
@@ -100,25 +99,11 @@ def split_documents(
 
 
 def create_embeddings(settings: Settings | None = None) -> Embeddings:
-    """Cria o modelo de embeddings configurado para Ollama ou OpenAI."""
+    """Cria o modelo local de embeddings do Ollama."""
     current_settings = settings or get_settings()
-
-    if current_settings.llm_provider == "ollama":
-        return OllamaEmbeddings(
-            model=current_settings.ollama_embedding_model,
-            base_url=current_settings.ollama_base_url,
-        )
-
-    api_key = current_settings.openai_api_key
-
-    if not api_key or api_key.startswith("substitua-"):
-        raise ValueError(
-            "OPENAI_API_KEY deve ser configurada para utilizar embeddings da OpenAI."
-        )
-
-    return OpenAIEmbeddings(
-        model=current_settings.openai_embedding_model,
-        api_key=api_key,
+    return OllamaEmbeddings(
+        model=current_settings.ollama_embedding_model,
+        base_url=current_settings.ollama_base_url,
     )
 
 

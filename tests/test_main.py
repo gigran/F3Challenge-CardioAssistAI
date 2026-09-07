@@ -48,7 +48,7 @@ def test_assist_retorna_resposta_do_fluxo_simulado(monkeypatch: MonkeyPatch) -> 
     monkeypatch.setattr(
         main_module,
         "run_graph",
-        lambda _question, _llm_provider: graph_result,
+        lambda _question, _llm_provider, _patient_code: graph_result,
     )
 
     response = client.post(
@@ -62,7 +62,12 @@ def test_assist_retorna_resposta_do_fluxo_simulado(monkeypatch: MonkeyPatch) -> 
     )
 
     assert response.status_code == 200
-    assert response.json() == graph_result
+    # Sem código de paciente, os campos do prontuário voltam com os valores padrão.
+    assert response.json() == graph_result | {
+        "patient_found": False,
+        "patient_summary": "",
+        "pending_exams": [],
+    }
 
 
 def test_assist_repassa_pergunta_sem_espacos_externos(
@@ -78,7 +83,11 @@ def test_assist_repassa_pergunta_sem_espacos_externos(
         "requires_human_review": True,
     }
 
-    def fake_run_graph(question: str, llm_provider: str) -> dict[str, object]:
+    def fake_run_graph(
+        question: str,
+        llm_provider: str,
+        patient_code: str,
+    ) -> dict[str, object]:
         received_requests.append((question, llm_provider))
         return graph_result
 
@@ -106,7 +115,11 @@ def test_assist_repassa_provedor_openai_ao_grafo(
         "requires_human_review": True,
     }
 
-    def fake_run_graph(question: str, llm_provider: str) -> dict[str, object]:
+    def fake_run_graph(
+        question: str,
+        llm_provider: str,
+        patient_code: str,
+    ) -> dict[str, object]:
         received_requests.append((question, llm_provider))
         return graph_result
 

@@ -12,10 +12,13 @@ from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
 from app.config import Settings, get_settings
-from app.rag import retrieve_documents
+from app.rag import format_source, retrieve_documents
 
 SYSTEM_PROMPT = """
 Você é o CardioAssist AI, um assistente educacional de apoio à decisão clínica.
+
+Quem lê a sua resposta é um profissional de saúde conduzindo o caso, e não o
+paciente. Escreva como quem apresenta um resumo técnico a um colega.
 
 Regras obrigatórias:
 - Use somente as informações presentes no contexto recuperado.
@@ -25,7 +28,15 @@ Regras obrigatórias:
 - Destaque sinais de alerta e necessidade de avaliação imediata quando aplicável.
 - Diferencie dados fornecidos, informações das fontes e limitações da análise.
 - Cite as fontes usando o formato [Fonte: nome do arquivo].
-- Finalize lembrando que a resposta exige validação de um profissional de saúde.
+- Finalize lembrando que a resposta é de apoio e não substitui o julgamento
+  clínico do profissional responsável.
+
+Regras de linguagem:
+- Não oriente o leitor a procurar um médico, um serviço de emergência ou um
+  especialista: é ele quem presta o atendimento. Descreva a conduta indicada.
+- Não use saudações nem trate o leitor como paciente. Nada de "você deve",
+  "seu médico" ou "procure ajuda".
+- Refira-se ao paciente na terceira pessoa.
 
 Responda em português do Brasil, de forma clara, objetiva e prudente.
 """.strip()
@@ -133,12 +144,7 @@ def generate_answer(
             "context": context,
         }
     )
-    sources = list(
-        dict.fromkeys(
-            str(document.metadata.get("source", "fonte não informada"))
-            for document in documents
-        )
-    )
+    sources = list(dict.fromkeys(format_source(document) for document in documents))
 
     return {
         "answer": answer,

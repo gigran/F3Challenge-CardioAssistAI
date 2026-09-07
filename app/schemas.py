@@ -43,6 +43,15 @@ class AssistRequest(BaseModel):
         default=LLMProvider.OLLAMA,
         description="Provedor utilizado somente para gerar a resposta.",
     )
+    patient_code: str = Field(
+        default="",
+        max_length=20,
+        description=(
+            "Código do paciente sintético no prontuário, como PAC-001. "
+            "Quando vazio, o assistente responde apenas com a base de conhecimento."
+        ),
+        examples=["PAC-006"],
+    )
 
 
 class AssistResponse(BaseModel):
@@ -65,4 +74,16 @@ class AssistResponse(BaseModel):
     )
     requires_human_review: bool = Field(
         description="Indica que a resposta exige validação profissional.",
+    )
+    patient_found: bool = Field(
+        default=False,
+        description="Indica se o código informado localizou um paciente.",
+    )
+    patient_summary: str = Field(
+        default="",
+        description="Resumo do prontuário usado para contextualizar a resposta.",
+    )
+    pending_exams: list[str] = Field(
+        default_factory=list,
+        description="Exames do paciente que ainda estão sem resultado.",
     )

@@ -44,13 +44,17 @@ def test_formata_lista_vazia_com_mensagem_explicita() -> None:
 
 def test_prompt_contem_regras_minimas_de_seguranca() -> None:
     """Confirma a presença das principais restrições no prompt de sistema."""
-    normalized_prompt = SYSTEM_PROMPT.lower()
+    # Junta as linhas para que a quebra de texto do prompt não quebre o teste.
+    normalized_prompt = " ".join(SYSTEM_PROMPT.lower().split())
 
     assert "use somente" in normalized_prompt
     assert "não invente" in normalized_prompt
     assert "não prescreva" in normalized_prompt
     assert "sinais de alerta" in normalized_prompt
-    assert "validação de um profissional" in normalized_prompt
+    assert "julgamento clínico do profissional" in normalized_prompt
+    # O público da resposta precisa estar declarado: quem lê conduz o caso.
+    assert "é um profissional de saúde conduzindo o caso" in normalized_prompt
+    assert "não oriente o leitor a procurar um médico" in normalized_prompt
 
 
 def test_rejeita_openai_sem_chave_configurada() -> None:

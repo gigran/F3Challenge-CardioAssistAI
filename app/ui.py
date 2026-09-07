@@ -18,6 +18,7 @@ def request_assistance(
     api_url: str,
     question: str,
     llm_provider: str,
+    patient_code: str = "",
 ) -> dict[str, Any]:
     """Envia a pergunta para a API e devolve a resposta validada como JSON."""
     response = httpx.post(
@@ -25,6 +26,7 @@ def request_assistance(
         json={
             "question": question,
             "llm_provider": llm_provider,
+            "patient_code": patient_code,
         },
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
@@ -37,8 +39,16 @@ def request_assistance(
     return result
 
 
-def render_result(result: dict[str, Any]) -> None:
+def render_result(result: dict[str, Any], patient_code: str = "") -> None:
     """Apresenta resposta, alertas, fontes e indicação de revisão humana."""
+    # Um código informado que não existe precisa ficar visível: sem isso, a
+    # resposta parece ter considerado o prontuário quando não considerou.
+    if patient_code and not result.get("patient_found", False):
+        st.error(
+            f"O paciente {patient_code} não foi encontrado no prontuário. "
+            "A resposta abaixo não considera dados deste paciente."
+        )
+
     safety_status = result.get("safety_status", "revisao_obrigatoria")
     safety_alerts = result.get("safety_alerts", [])
 
@@ -57,6 +67,17 @@ def render_result(result: dict[str, Any]) -> None:
         for alert in safety_alerts:
             st.warning(alert)
 
+    pending_exams = result.get("pending_exams", [])
+    if pending_exams:
+        st.subheader("Exames pendentes")
+        for exam in pending_exams:
+            st.write(f"- {exam}")
+
+    patient_summary = result.get("patient_summary", "")
+    if patient_summary:
+        with st.expander("Prontuário usado como contexto"):
+            st.text(patient_summary)
+
     st.subheader("Fontes consultadas")
     sources = result.get("sources", [])
     if sources:
@@ -66,7 +87,9 @@ def render_result(result: dict[str, Any]) -> None:
         st.write("Nenhuma fonte foi informada pela API.")
 
     if result.get("requires_human_review", True):
-        st.warning("Esta resposta deve ser revisada por um profissional de saúde.")
+        st.warning(
+            "Resposta de apoio à decisão: exige validação do profissional responsável."
+        )
 
 
 def main() -> None:
@@ -106,6 +129,15 @@ def main() -> None:
         st.caption("Embeddings: Ollama — nomic-embed-text")
 
     with st.form("assist_form"):
+        patient_code = st.text_input(
+            "Código do paciente (opcional)",
+            placeholder="Exemplo: PAC-006",
+            max_chars=20,
+            help=(
+                "Quando informado, o assistente consulta o prontuário sintético "
+                "e verifica os exames pendentes antes de responder."
+            ),
+        )
         question = st.text_area(
             "Dados sintéticos e pergunta clínica",
             placeholder=(
@@ -135,6 +167,7 @@ def main() -> None:
                 api_url,
                 normalized_question,
                 llm_provider,
+                patient_code.strip(),
             )
     except httpx.ReadTimeout:
         logger.exception(
@@ -172,7 +205,7 @@ def main() -> None:
         st.error("A API retornou uma resposta em formato inválido.")
         return
 
-    render_result(result)
+    render_result(result, patient_code.strip())
 
 
 if __name__ == "__main__":

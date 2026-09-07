@@ -18,6 +18,8 @@ langsmith==0.11.1
 
 # PostgreSQL e RAG com vetores
 langchain-postgres==0.0.17
+SQLAlchemy==2.0.52
+psycopg[binary]==3.3.5
 
 # Configuracao por variaveis de ambiente
 python-dotenv==1.2.3

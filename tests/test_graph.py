@@ -101,7 +101,7 @@ def test_classifica_emergencia_e_prioriza_atendimento() -> None:
         "dor torácica",
     ]
     assert result["answer"].startswith("ALERTA DE SEGURANÇA")
-    assert "não deve atrasar o atendimento" in result["answer"]
+    assert "não deve atrasar a conduta" in result["answer"]
     assert result["requires_human_review"] is True
 
 

@@ -67,6 +67,7 @@ def test_envia_pergunta_e_retorna_resposta(
         "json": {
             "question": "Paciente sintético com hipertensão.",
             "llm_provider": "openai",
+            "patient_code": "",
         },
         "timeout": 300.0,
     }

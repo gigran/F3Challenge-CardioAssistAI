@@ -4,12 +4,14 @@ import os
 from dataclasses import replace
 
 import pytest
+from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
 
 from app.config import get_settings
 from app.rag import (
     _separate_front_matter,
     create_embeddings,
+    format_source,
     load_knowledge_documents,
     retrieve_documents,
     split_documents,
@@ -164,3 +166,82 @@ def test_recupera_dor_toracica_com_ollama() -> None:
         or "sinais de alerta" in document.page_content.lower()
         for document in documents
     )
+
+
+def test_grava_a_secao_de_cada_trecho() -> None:
+    """A fonte precisa apontar o lugar do documento, não só o arquivo."""
+    documento = Document(
+        page_content=(
+            "# Título do documento\n\n"
+            "Texto de abertura.\n\n"
+            "## Sinais de alerta\n\n"
+            "Conteúdo da seção de alerta.\n\n"
+            "## Acompanhamento\n\n"
+            "Conteúdo da seção de acompanhamento.\n"
+        ),
+        metadata={"source": "data/knowledge_base/teste.md", "file_name": "teste.md"},
+    )
+
+    chunks = split_documents([documento], chunk_size=60, chunk_overlap=0)
+    secoes = [chunk.metadata["secao"] for chunk in chunks]
+
+    assert "Sinais de alerta" in secoes
+    assert "Acompanhamento" in secoes
+    assert all(secao for secao in secoes)
+
+
+def test_herda_a_secao_quando_o_trecho_comeca_no_meio() -> None:
+    """Trecho que não começa em título herda a seção anterior."""
+    corpo = "## Sinais de alerta\n\n" + ("Frase longa da seção. " * 30)
+    documento = Document(
+        page_content=corpo,
+        metadata={"source": "data/knowledge_base/teste.md", "file_name": "teste.md"},
+    )
+
+    chunks = split_documents([documento], chunk_size=200, chunk_overlap=0)
+
+    assert len(chunks) > 1
+    assert all(chunk.metadata["secao"] == "Sinais de alerta" for chunk in chunks)
+
+
+def test_monta_a_fonte_com_arquivo_e_secao() -> None:
+    """Formato usado na resposta da API e no prompt."""
+    documento = Document(
+        page_content="conteúdo",
+        metadata={
+            "source": "data/knowledge_base/hipertensao.md",
+            "secao": "Sinais de alerta e segurança",
+        },
+    )
+
+    assert format_source(documento) == (
+        "data/knowledge_base/hipertensao.md § Sinais de alerta e segurança"
+    )
+
+
+def test_usa_apenas_o_arquivo_quando_nao_ha_secao() -> None:
+    """Sem seção resolvida, a fonte não pode ficar com o separador solto."""
+    documento = Document(
+        page_content="conteúdo",
+        metadata={"source": "data/knowledge_base/hipertensao.md", "secao": ""},
+    )
+
+    assert format_source(documento) == "data/knowledge_base/hipertensao.md"
+
+
+def test_fontes_do_mesmo_arquivo_nao_se_fundem() -> None:
+    """Antes, dois trechos do mesmo arquivo viravam uma única fonte."""
+    documentos = [
+        Document(
+            page_content="a",
+            metadata={"source": "base.md", "secao": "Seção A"},
+        ),
+        Document(
+            page_content="b",
+            metadata={"source": "base.md", "secao": "Seção B"},
+        ),
+    ]
+
+    fontes = list(dict.fromkeys(format_source(d) for d in documentos))
+
+    assert fontes == ["base.md § Seção A", "base.md § Seção B"]

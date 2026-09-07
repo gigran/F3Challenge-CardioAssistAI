@@ -41,7 +41,8 @@ postgres_data/
 data/postgres/
 
 # Modelos, adapters e checkpoints de treinamento
-models/
+models/*
+!models/Modelfile
 adapters/
 checkpoints/
 *.gguf
@@ -55,3 +56,7 @@ checkpoints/
 
 # Configuração local do Docker Compose
 docker-compose.override.yml
+# Fine-tuning: download bruto e dataset completo (a amostra vai para o git)
+data/finetuning/medpt_bruto.parquet
+data/finetuning/dataset_cardiologia.json
+outputs/

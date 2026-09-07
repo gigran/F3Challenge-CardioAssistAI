@@ -1,0 +1,128 @@
+[
+  {
+    "codigo": "PAC-001",
+    "idade": 62,
+    "sexo": "masculino",
+    "condicoes_cronicas": "Hipertensão arterial sistêmica; dislipidemia",
+    "alergias": "Nenhuma alergia conhecida",
+    "medicacoes": [
+      {"nome": "Losartana", "dose": "50 mg", "frequencia": "2 vezes ao dia", "ativa": true},
+      {"nome": "Atorvastatina", "dose": "20 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Hidroclorotiazida", "dose": "25 mg", "frequencia": "1 vez ao dia", "ativa": false}
+    ],
+    "exames": [
+      {"nome": "Colesterol LDL", "resultado": "142 mg/dL", "valor_referencia": "< 100 mg/dL", "status": "concluido", "data": "2026-08-14"},
+      {"nome": "Creatinina", "resultado": "1,1 mg/dL", "valor_referencia": "0,7 a 1,3 mg/dL", "status": "concluido", "data": "2026-08-14"},
+      {"nome": "Ecocardiograma transtorácico", "resultado": null, "valor_referencia": null, "status": "pendente", "data": null}
+    ],
+    "atendimentos": [
+      {"data": "2026-08-20", "queixa": "Consulta de rotina, sem sintomas no momento.", "evolucao": "Pressão aferida em 148/92. Ajustada a dose da losartana e solicitado ecocardiograma.", "profissional": "Cardiologista"},
+      {"data": "2026-05-11", "queixa": "Cefaleia occipital ocasional pela manhã.", "evolucao": "Pressão 152/94. Reforçada a orientação sobre redução de sal.", "profissional": "Clínico geral"}
+    ]
+  },
+  {
+    "codigo": "PAC-002",
+    "idade": 54,
+    "sexo": "feminino",
+    "condicoes_cronicas": "Diabetes mellitus tipo 2; sobrepeso",
+    "alergias": "Alergia a dipirona",
+    "medicacoes": [
+      {"nome": "Metformina", "dose": "850 mg", "frequencia": "2 vezes ao dia", "ativa": true},
+      {"nome": "Enalapril", "dose": "10 mg", "frequencia": "2 vezes ao dia", "ativa": true}
+    ],
+    "exames": [
+      {"nome": "Hemoglobina glicada", "resultado": "8,2 %", "valor_referencia": "< 7,0 %", "status": "concluido", "data": "2026-09-01"},
+      {"nome": "Eletrocardiograma de repouso", "resultado": "Ritmo sinusal, sem alterações agudas de repolarização", "valor_referencia": null, "status": "concluido", "data": "2026-09-02"},
+      {"nome": "Troponina I", "resultado": null, "valor_referencia": "< 0,04 ng/mL", "status": "pendente", "data": null},
+      {"nome": "Teste ergométrico", "resultado": null, "valor_referencia": null, "status": "pendente", "data": null}
+    ],
+    "atendimentos": [
+      {"data": "2026-09-02", "queixa": "Desconforto torácico em aperto aos esforços, há duas semanas.", "evolucao": "Eletrocardiograma sem alterações agudas. Solicitadas troponina e teste ergométrico. Orientada a procurar emergência se a dor surgir em repouso.", "profissional": "Cardiologista"}
+    ]
+  },
+  {
+    "codigo": "PAC-003",
+    "idade": 71,
+    "sexo": "masculino",
+    "condicoes_cronicas": "Insuficiência cardíaca com fração de ejeção reduzida; doença renal crônica estágio 3",
+    "alergias": "Nenhuma alergia conhecida",
+    "medicacoes": [
+      {"nome": "Carvedilol", "dose": "12,5 mg", "frequencia": "2 vezes ao dia", "ativa": true},
+      {"nome": "Espironolactona", "dose": "25 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Furosemida", "dose": "40 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Dapagliflozina", "dose": "10 mg", "frequencia": "1 vez ao dia", "ativa": true}
+    ],
+    "exames": [
+      {"nome": "Ecocardiograma transtorácico", "resultado": "Fração de ejeção de 32%", "valor_referencia": "> 52%", "status": "concluido", "data": "2026-07-30"},
+      {"nome": "Potássio sérico", "resultado": "5,4 mEq/L", "valor_referencia": "3,5 a 5,0 mEq/L", "status": "concluido", "data": "2026-08-28"},
+      {"nome": "Creatinina", "resultado": "1,9 mg/dL", "valor_referencia": "0,7 a 1,3 mg/dL", "status": "concluido", "data": "2026-08-28"},
+      {"nome": "Peptídeo natriurético tipo B", "resultado": null, "valor_referencia": "< 100 pg/mL", "status": "pendente", "data": null}
+    ],
+    "atendimentos": [
+      {"data": "2026-08-28", "queixa": "Falta de ar aos pequenos esforços e inchaço nas pernas.", "evolucao": "Potássio elevado e piora da função renal. Solicitado peptídeo natriurético e reavaliação em uma semana.", "profissional": "Cardiologista"},
+      {"data": "2026-07-30", "queixa": "Retorno com resultado de ecocardiograma.", "evolucao": "Fração de ejeção reduzida confirmada. Mantido o tratamento otimizado.", "profissional": "Cardiologista"}
+    ]
+  },
+  {
+    "codigo": "PAC-004",
+    "idade": 48,
+    "sexo": "masculino",
+    "condicoes_cronicas": "Infarto agudo do miocárdio prévio (junho de 2026); tabagismo em cessação",
+    "alergias": "Nenhuma alergia conhecida",
+    "medicacoes": [
+      {"nome": "Ácido acetilsalicílico", "dose": "100 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Clopidogrel", "dose": "75 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Rosuvastatina", "dose": "20 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Metoprolol", "dose": "50 mg", "frequencia": "2 vezes ao dia", "ativa": true}
+    ],
+    "exames": [
+      {"nome": "Colesterol LDL", "resultado": "68 mg/dL", "valor_referencia": "< 70 mg/dL", "status": "concluido", "data": "2026-08-25"},
+      {"nome": "Ecocardiograma transtorácico", "resultado": "Fração de ejeção de 48%, hipocinesia da parede anterior", "valor_referencia": "> 52%", "status": "concluido", "data": "2026-07-15"}
+    ],
+    "atendimentos": [
+      {"data": "2026-08-25", "queixa": "Retorno de acompanhamento pós-infarto, sem dor torácica.", "evolucao": "Boa evolução clínica. Encaminhado para reabilitação cardiovascular.", "profissional": "Cardiologista"}
+    ]
+  },
+  {
+    "codigo": "PAC-005",
+    "idade": 67,
+    "sexo": "feminino",
+    "condicoes_cronicas": "Fibrilação atrial permanente; hipotireoidismo",
+    "alergias": "Alergia a ácido acetilsalicílico",
+    "medicacoes": [
+      {"nome": "Rivaroxabana", "dose": "20 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Levotiroxina", "dose": "75 mcg", "frequencia": "1 vez ao dia, em jejum", "ativa": true},
+      {"nome": "Diltiazem", "dose": "60 mg", "frequencia": "3 vezes ao dia", "ativa": true}
+    ],
+    "exames": [
+      {"nome": "Eletrocardiograma de repouso", "resultado": "Fibrilação atrial com resposta ventricular de 96 bpm", "valor_referencia": null, "status": "concluido", "data": "2026-08-18"},
+      {"nome": "TSH", "resultado": "3,1 mUI/L", "valor_referencia": "0,4 a 4,0 mUI/L", "status": "concluido", "data": "2026-08-18"},
+      {"nome": "Hemograma completo", "resultado": null, "valor_referencia": null, "status": "pendente", "data": null}
+    ],
+    "atendimentos": [
+      {"data": "2026-08-18", "queixa": "Palpitação ocasional e cansaço aos esforços.", "evolucao": "Frequência cardíaca ainda acima do alvo. Solicitado hemograma antes de rever a dose do diltiazem.", "profissional": "Cardiologista"}
+    ]
+  },
+  {
+    "codigo": "PAC-006",
+    "idade": 59,
+    "sexo": "masculino",
+    "condicoes_cronicas": "Hipertensão arterial de difícil controle; apneia obstrutiva do sono",
+    "alergias": "Nenhuma alergia conhecida",
+    "medicacoes": [
+      {"nome": "Anlodipino", "dose": "10 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Losartana", "dose": "100 mg", "frequencia": "1 vez ao dia", "ativa": true},
+      {"nome": "Clortalidona", "dose": "25 mg", "frequencia": "1 vez ao dia", "ativa": true}
+    ],
+    "exames": [
+      {"nome": "Monitorização ambulatorial da pressão arterial", "resultado": "Média de 24 horas de 168/104 mmHg", "valor_referencia": "< 130/80 mmHg", "status": "concluido", "data": "2026-08-30"},
+      {"nome": "Microalbuminúria", "resultado": "78 mg/g", "valor_referencia": "< 30 mg/g", "status": "concluido", "data": "2026-08-30"},
+      {"nome": "Ecocardiograma transtorácico", "resultado": null, "valor_referencia": null, "status": "pendente", "data": null},
+      {"nome": "Polissonografia", "resultado": null, "valor_referencia": null, "status": "pendente", "data": null}
+    ],
+    "atendimentos": [
+      {"data": "2026-09-03", "queixa": "Pressão aferida em casa em 190/125, com dor de cabeça intensa.", "evolucao": "Encaminhado para avaliação imediata em serviço de emergência. Investigação de hipertensão secundária em andamento.", "profissional": "Cardiologista"},
+      {"data": "2026-08-30", "queixa": "Retorno com resultado da monitorização de 24 horas.", "evolucao": "Controle pressórico inadequado apesar de três medicações. Solicitados ecocardiograma e polissonografia.", "profissional": "Cardiologista"}
+    ]
+  }
+]

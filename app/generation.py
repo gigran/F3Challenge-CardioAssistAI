@@ -1,7 +1,7 @@
 """Geração de respostas contextualizadas com LCEL."""
 
 from functools import lru_cache
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 from langchain_core.documents import Document
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -10,7 +10,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import Runnable
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
-
+from pydantic import BaseModel, Field
 from app.config import Settings, get_settings
 from app.rag import format_source, retrieve_documents
 
@@ -39,6 +39,20 @@ Regras de linguagem:
 - Refira-se ao paciente na terceira pessoa.
 
 Responda em português do Brasil, de forma clara, objetiva e prudente.
+""".strip()
+
+CLASSIFIER_SYSTEM_PROMPT = """
+Você classifica perguntas do CardioAssist AI em UMA categoria.
+
+Categorias e quando usar cada uma:
+- informacao_geral: pergunta especificamente conceitual sobre uma doença em geral.
+- sintomas: sinais e sintomas de uma condição.
+- frequencia: prevalência, incidência ou frequência de uma condição.
+- tratamento: como tratar, terapia ou conduta terapêutica.
+- diagnostico: como diagnosticar ou critérios diagnósticos.
+- fora_escopo: pedido que não é se encaixa em informação geral e não é da área clínica da cardiologia.
+
+Responda somente com a categoria e um grau de confiança entre 0 e 1.
 """.strip()
 
 
@@ -105,6 +119,38 @@ def create_chat_model(
         temperature=0,
     )
 
+class IntentResult(BaseModel):
+    """Classificação de intenção produzida pela LLM."""
+
+    intent: Literal[
+        "informacao_geral",
+        "sintomas",
+        "frequencia",
+        "tratamento",
+        "diagnostico",
+        "protocolo",
+        "procedimento",
+        "fora_escopo",
+    ] = Field(description="Categoria da pergunta.")
+    confidence: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="Grau de confiança da classificação, entre 0 e 1.",
+    )
+
+@lru_cache(maxsize=3)
+def get_classification_chain(
+    llm_provider: str,
+) -> Runnable[dict[str, str], IntentResult]:
+    """Monta e mantém em cache a cadeia LCEL de classificação de intenção."""
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", CLASSIFIER_SYSTEM_PROMPT),
+            ("human", "Pergunta:\n{question}"),
+        ]
+    )
+    model = create_chat_model(llm_provider=llm_provider)
+    return prompt | model.with_structured_output(IntentResult)
 
 @lru_cache(maxsize=2)
 def get_generation_chain(llm_provider: str) -> Runnable[dict[str, str], str]:

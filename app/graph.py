@@ -4,14 +4,14 @@ import operator
 import re
 import unicodedata
 from functools import lru_cache
-from typing import Annotated, Literal, TypedDict, cast
+from typing import Annotated, Literal, TypedDict, cast, NotRequired
 
 from langchain_core.documents import Document
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from app.config import get_settings
-from app.generation import format_documents, get_generation_chain
+from app.generation import format_documents, get_generation_chain, get_classification_chain
 from app.logger import monitor_node_execution
 from app.nodes.prontuario import (
     COM_PACIENTE,
@@ -58,6 +58,31 @@ ALERT_TERMS = {
     "convulsao": "convulsão",
 }
 
+INSTRUCTIONS = {
+    "informacao_geral":
+        "Responda esta pergunta que solicita informação",
+
+    "frequencia":
+        "Responda esta pergunta sobre a frequência de uma doença",
+
+    "tratamento":
+        "Responda esta pergunta que solicita informações de tratamento de uma doença",
+
+    "sintomas":
+        "Responda esta pergunta sobre os sintomas de uma doença",
+
+    "diagnostico":
+        "Responda esta pergunta sobre como realizar o diagnostico de uma doença.",
+}
+
+RAG_REQUIRED = {
+    "tratamento": True,
+    "diagnostico": True,
+    "sintomas": True,
+    "frequencia": False,
+    "informacao_geral": False
+}
+
 SafetyStatus = Literal["revisao_obrigatoria", "atencao", "emergencia"]
 
 # Aviso colado na resposta quando o código informado não existe no prontuário.
@@ -82,7 +107,7 @@ class GraphOutput(TypedDict):
     """Saída pública do grafo."""
 
     answer: str
-    sources: list[str]
+    sources: NotRequired[list[str]]
     safety_alerts: list[str]
     safety_status: SafetyStatus
     requires_human_review: bool
@@ -95,6 +120,9 @@ class GraphState(TypedDict, total=False):
     """Estado compartilhado entre os nós do LangGraph."""
 
     question: str
+    intent: str
+    confidence: float
+    instruction: str
     llm_provider: str
     patient_code: str
     patient_summary: str
@@ -146,6 +174,73 @@ def retrieve_node(state: GraphState) -> GraphState:
     return {
         "documents": documents,
         "sources": sources,
+    }
+
+# @monitor_node_execution
+def _classify_intent_fallback(question: str) -> dict:
+    """Classificação por regras, usada quando a LLM não responde."""
+    question_lower = question.lower()
+
+    if any(
+        x in question_lower
+        for x in ["sintoma", "sintomas", "sinal"]
+    ):
+        return {
+            "intent": "sintomas",
+            "confidence": 0.90
+        }
+
+    if any(
+        x in question_lower
+        for x in ["quantas pessoas", "prevalência", "incidência",
+                  "frequência", "frequencia"]
+    ):
+        return {
+            "intent": "frequencia",
+            "confidence": 0.90
+        }
+
+    if any(
+        x in question_lower
+        for x in ["tratamento", "tratar", "terapia"]
+    ):
+        return {
+            "intent": "tratamento",
+            "confidence": 0.90
+        }
+
+    return {
+        "intent": "informacao_geral",
+        "confidence": 0.50
+    }
+
+def should_use_rag(state: GraphState) -> GraphState:
+    intent = state["intent"]
+
+    if RAG_REQUIRED.get(intent, True):
+        return "rag"
+
+    return "generate"
+
+@monitor_node_execution
+def classify_question(state: GraphState) -> GraphState:
+    """Classifica a intenção com a LLM; recorre às regras se a LLM falhar."""
+    question = state["question"]
+    provider = "ollama"
+
+    try:
+        result = get_classification_chain(provider).invoke({"question": question})
+        intent = result.intent
+        confidence = result.confidence
+    except Exception:
+        fallback = _classify_intent_fallback(question)
+        intent = fallback["intent"]
+        confidence = fallback["confidence"]
+
+    return {
+        "intent": intent,
+        "confidence": confidence,
+        "instruction": INSTRUCTIONS[intent],
     }
 
 @monitor_node_execution
@@ -232,6 +327,7 @@ def get_graph() -> CompiledStateGraph:
     )
     builder.add_node("prontuario", prontuario_node)
     builder.add_node("exames_pendentes", exames_pendentes_node)
+    builder.add_node("classify", classify_question)
     builder.add_node("retrieve", retrieve_node)
     builder.add_node("generate", generate_node)
     builder.add_node("safety", safety_node)
@@ -242,11 +338,19 @@ def get_graph() -> CompiledStateGraph:
         rotear_por_paciente,
         {
             COM_PACIENTE: "prontuario",
-            SEM_PACIENTE: "retrieve",
+            SEM_PACIENTE: "classify",
         },
     )
+    builder.add_conditional_edges(
+        "classify",
+        should_use_rag,
+        {
+            "rag": "retrieve",
+            "generate": "generate"
+        }
+    )
     builder.add_edge("prontuario", "exames_pendentes")
-    builder.add_edge("exames_pendentes", "retrieve")
+    builder.add_edge("exames_pendentes", "classify")
     builder.add_edge("retrieve", "generate")
     builder.add_edge("generate", "safety")
     builder.add_edge("safety", END)

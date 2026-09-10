@@ -73,6 +73,9 @@ INSTRUCTIONS = {
 
     "diagnostico":
         "Responda esta pergunta sobre como realizar o diagnostico de uma doença.",
+
+    "fora_escopo":
+        "Responda que a pergunta esta fora do escopo.",
 }
 
 RAG_REQUIRED = {

@@ -24,7 +24,9 @@ SYNTHETIC_DATA_PATH = PROJECT_ROOT / "data" / "synthetic" / "prontuarios.json"
 def ler_prontuarios(caminho: Path = SYNTHETIC_DATA_PATH) -> list[dict]:
     """Lê o arquivo JSON com os pacientes sintéticos."""
     if not caminho.exists():
-        raise FileNotFoundError(f"Arquivo de dados sintéticos não encontrado: {caminho}")
+        raise FileNotFoundError(
+            f"Arquivo de dados sintéticos não encontrado: {caminho}"
+        )
 
     with caminho.open(encoding="utf-8") as arquivo:
         return json.load(arquivo)

@@ -78,8 +78,9 @@ def test_descarta_respostas_curtas_e_perguntas_repetidas() -> None:
 
 def test_monta_instrucao_a_partir_do_tipo_de_pergunta() -> None:
     """O MedPT não traz a coluna instruction, que é derivada do question_type."""
-    assert build_instruction("Tratamento") == (
-        config.INSTRUCTION_BY_QUESTION_TYPE["Tratamento"]
+    assert (
+        build_instruction("Tratamento")
+        == (config.INSTRUCTION_BY_QUESTION_TYPE["Tratamento"])
     )
     assert build_instruction("tipo inexistente") == config.DEFAULT_INSTRUCTION
 

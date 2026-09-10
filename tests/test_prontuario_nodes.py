@@ -114,7 +114,7 @@ def test_grafo_tem_ramificacao_condicional_na_entrada() -> None:
 
     assert condicionais == {
         COM_PACIENTE: "prontuario",
-        SEM_PACIENTE: "retrieve",
+        SEM_PACIENTE: "classify",
     }
 
 

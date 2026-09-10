@@ -11,7 +11,11 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from app.config import get_settings
-from app.generation import format_documents, get_generation_chain, get_classification_chain
+from app.generation import (
+    format_documents,
+    get_generation_chain,
+    get_classification_chain,
+)
 from app.logger import monitor_node_execution
 from app.nodes.prontuario import (
     COM_PACIENTE,
@@ -59,23 +63,12 @@ ALERT_TERMS = {
 }
 
 INSTRUCTIONS = {
-    "informacao_geral":
-        "Responda esta pergunta que solicita informação",
-
-    "frequencia":
-        "Responda esta pergunta sobre a frequência de uma doença",
-
-    "tratamento":
-        "Responda esta pergunta que solicita informações de tratamento de uma doença",
-
-    "sintomas":
-        "Responda esta pergunta sobre os sintomas de uma doença",
-
-    "diagnostico":
-        "Responda esta pergunta sobre como realizar o diagnostico de uma doença.",
-
-    "fora_escopo":
-        "Responda que a pergunta esta fora do escopo.",
+    "informacao_geral": "Responda esta pergunta que solicita informação",
+    "frequencia": "Responda esta pergunta sobre a frequência de uma doença",
+    "tratamento": "Responda esta pergunta que solicita informações de tratamento de uma doença",
+    "sintomas": "Responda esta pergunta sobre os sintomas de uma doença",
+    "diagnostico": "Responda esta pergunta sobre como realizar o diagnostico de uma doença.",
+    "fora_escopo": "Responda que a pergunta esta fora do escopo.",
 }
 
 RAG_REQUIRED = {
@@ -83,7 +76,7 @@ RAG_REQUIRED = {
     "diagnostico": True,
     "sintomas": True,
     "frequencia": False,
-    "informacao_geral": False
+    "informacao_geral": False,
 }
 
 SafetyStatus = Literal["revisao_obrigatoria", "atencao", "emergencia"]
@@ -167,6 +160,7 @@ def detect_safety_alerts(question: str) -> tuple[bool, list[str]]:
 
     return severe_pressure, symptoms
 
+
 @monitor_node_execution
 def retrieve_node(state: GraphState) -> GraphState:
     """Recupera os documentos relevantes e suas fontes."""
@@ -179,43 +173,32 @@ def retrieve_node(state: GraphState) -> GraphState:
         "sources": sources,
     }
 
+
 # @monitor_node_execution
 def _classify_intent_fallback(question: str) -> dict:
     """Classificação por regras, usada quando a LLM não responde."""
     question_lower = question.lower()
 
-    if any(
-        x in question_lower
-        for x in ["sintoma", "sintomas", "sinal"]
-    ):
-        return {
-            "intent": "sintomas",
-            "confidence": 0.90
-        }
+    if any(x in question_lower for x in ["sintoma", "sintomas", "sinal"]):
+        return {"intent": "sintomas", "confidence": 0.90}
 
     if any(
         x in question_lower
-        for x in ["quantas pessoas", "prevalência", "incidência",
-                  "frequência", "frequencia"]
+        for x in [
+            "quantas pessoas",
+            "prevalência",
+            "incidência",
+            "frequência",
+            "frequencia",
+        ]
     ):
-        return {
-            "intent": "frequencia",
-            "confidence": 0.90
-        }
+        return {"intent": "frequencia", "confidence": 0.90}
 
-    if any(
-        x in question_lower
-        for x in ["tratamento", "tratar", "terapia"]
-    ):
-        return {
-            "intent": "tratamento",
-            "confidence": 0.90
-        }
+    if any(x in question_lower for x in ["tratamento", "tratar", "terapia"]):
+        return {"intent": "tratamento", "confidence": 0.90}
 
-    return {
-        "intent": "informacao_geral",
-        "confidence": 0.50
-    }
+    return {"intent": "informacao_geral", "confidence": 0.50}
+
 
 def should_use_rag(state: GraphState) -> GraphState:
     intent = state["intent"]
@@ -224,6 +207,7 @@ def should_use_rag(state: GraphState) -> GraphState:
         return "rag"
 
     return "generate"
+
 
 @monitor_node_execution
 def classify_question(state: GraphState) -> GraphState:
@@ -235,7 +219,7 @@ def classify_question(state: GraphState) -> GraphState:
         result = get_classification_chain(provider).invoke({"question": question})
         intent = result.intent
         confidence = result.confidence
-    except Exception:
+    except Exception:  # noqa: BLE001 - falha da LLM exige fallback determinístico
         fallback = _classify_intent_fallback(question)
         intent = fallback["intent"]
         confidence = fallback["confidence"]
@@ -245,6 +229,7 @@ def classify_question(state: GraphState) -> GraphState:
         "confidence": confidence,
         "instruction": INSTRUCTIONS[intent],
     }
+
 
 @monitor_node_execution
 def generate_node(state: GraphState) -> GraphState:
@@ -265,6 +250,7 @@ def generate_node(state: GraphState) -> GraphState:
         }
     )
     return {"answer": answer}
+
 
 @monitor_node_execution
 def safety_node(state: GraphState) -> GraphState:
@@ -345,12 +331,7 @@ def get_graph() -> CompiledStateGraph:
         },
     )
     builder.add_conditional_edges(
-        "classify",
-        should_use_rag,
-        {
-            "rag": "retrieve",
-            "generate": "generate"
-        }
+        "classify", should_use_rag, {"rag": "retrieve", "generate": "generate"}
     )
     builder.add_edge("prontuario", "exames_pendentes")
     builder.add_edge("exames_pendentes", "classify")

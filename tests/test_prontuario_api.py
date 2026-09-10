@@ -118,7 +118,10 @@ def test_conclui_exame_pendente(client) -> None:
 
     assert resposta.status_code == 200
     assert resposta.json()["status"] == "concluido"
-    assert "- nenhum exame pendente" in client.get("/pacientes/PAC-100/resumo").json()["resumo"]
+    assert (
+        "- nenhum exame pendente"
+        in client.get("/pacientes/PAC-100/resumo").json()["resumo"]
+    )
 
 
 def test_recusa_exame_de_outro_paciente(client) -> None:

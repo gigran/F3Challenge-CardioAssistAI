@@ -26,6 +26,7 @@ SEPARADOR_DE_SECAO = " § "
 # Para PDFs, a "seção" citada é o número da página.
 PREFIXO_DE_PAGINA = "pág. "
 
+
 def _carregar_markdown(document_path: Path) -> list[Document]:
     """Lê um arquivo Markdown como um único documento LangChain."""
     content = document_path.read_text(encoding="utf-8")
@@ -70,10 +71,12 @@ def _carregar_pdf(document_path: Path) -> list[Document]:
 
     return documents
 
+
 _CARREGADORES_POR_EXTENSAO = {
     ".md": _carregar_markdown,
     ".pdf": _carregar_pdf,
 }
+
 
 def _resolver_secao(chunk: Document, conteudo_do_documento: str) -> str:
     """Descobre em que seção do documento original o trecho começa.
@@ -95,6 +98,7 @@ def _resolver_secao(chunk: Document, conteudo_do_documento: str) -> str:
     pagina = chunk.metadata.get("pagina")
     return f"{PREFIXO_DE_PAGINA}{pagina}" if pagina else ""
 
+
 def add_section_metadata(
     documents: list[Document],
     chunks: list[Document],
@@ -105,9 +109,9 @@ def add_section_metadata(
     #     for document in documents
     # }
     conteudo_por_arquivo = {
-         str(document.metadata.get("source", "")): document.page_content
-         for document in documents
-     }
+        str(document.metadata.get("source", "")): document.page_content
+        for document in documents
+    }
 
     for chunk in chunks:
         arquivo = str(chunk.metadata.get("source", ""))
@@ -176,6 +180,7 @@ def load_knowledge_documents(
 
     return documents
 
+
 # def load_knowledge_documents(
 #     directory: Path = KNOWLEDGE_BASE_DIRECTORY,
 # ) -> list[Document]:
@@ -210,7 +215,7 @@ def load_knowledge_documents(
 #                 metadata=metadata,
 #             )
 #         )
-    
+
 
 #     return documents
 

@@ -119,6 +119,7 @@ def create_chat_model(
         temperature=0,
     )
 
+
 class IntentResult(BaseModel):
     """Classificação de intenção produzida pela LLM."""
 
@@ -138,6 +139,7 @@ class IntentResult(BaseModel):
         description="Grau de confiança da classificação, entre 0 e 1.",
     )
 
+
 @lru_cache(maxsize=3)
 def get_classification_chain(
     llm_provider: str,
@@ -151,6 +153,7 @@ def get_classification_chain(
     )
     model = create_chat_model(llm_provider=llm_provider)
     return prompt | model.with_structured_output(IntentResult)
+
 
 @lru_cache(maxsize=2)
 def get_generation_chain(llm_provider: str) -> Runnable[dict[str, str], str]:

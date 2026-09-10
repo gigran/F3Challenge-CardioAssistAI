@@ -63,12 +63,7 @@ def _garantir_dados_sinteticos(*textos: str | None) -> None:
         return
 
     encontrados = sorted(
-        {
-            tipo
-            for texto in textos
-            if texto
-            for tipo in encontrar_dados_pessoais(texto)
-        }
+        {tipo for texto in textos if texto for tipo in encontrar_dados_pessoais(texto)}
     )
 
     if not encontrados:
@@ -113,7 +108,10 @@ def detalhar(codigo: str, session: SessaoDoBanco) -> Paciente:
 def resumir(codigo: str, session: SessaoDoBanco) -> dict[str, str]:
     """Devolve o mesmo resumo em texto que o assistente usa como contexto."""
     _obter_paciente(session, codigo)
-    return {"codigo": codigo.strip().upper(), "resumo": montar_resumo_prontuario(session, codigo)}
+    return {
+        "codigo": codigo.strip().upper(),
+        "resumo": montar_resumo_prontuario(session, codigo),
+    }
 
 
 @router.post("", response_model=PacienteCompleto, status_code=status.HTTP_201_CREATED)

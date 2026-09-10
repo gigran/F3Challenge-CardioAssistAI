@@ -178,6 +178,14 @@ def test_executa_fluxo_com_recuperacao_e_geracao_simuladas(
     def fake_generate_node(_state: GraphState) -> GraphState:
         return {"answer": "Resposta simulada pelo teste."}
 
+    def fake_classify_question(_state: GraphState) -> GraphState:
+        return {
+            "intent": "sintomas",
+            "confidence": 1.0,
+            "instruction": "Responda esta pergunta sobre os sintomas de uma doença",
+        }
+
+    monkeypatch.setattr(graph_module, "classify_question", fake_classify_question)
     monkeypatch.setattr(graph_module, "retrieve_node", fake_retrieve_node)
     monkeypatch.setattr(graph_module, "generate_node", fake_generate_node)
     get_graph.cache_clear()

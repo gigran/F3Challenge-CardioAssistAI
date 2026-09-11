@@ -11,7 +11,7 @@ import json
 from datetime import date
 from pathlib import Path
 
-from sqlalchemy import delete
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.config import PROJECT_ROOT
@@ -19,6 +19,19 @@ from app.database.connection import create_tables, get_session
 from app.database.models import Atendimento, Exame, Medicacao, Paciente
 
 SYNTHETIC_DATA_PATH = PROJECT_ROOT / "data" / "synthetic" / "prontuarios.json"
+
+
+def criar_dados_sinteticos() -> int:
+    """Cria as tabelas e popula o banco somente quando estiver vazio."""
+    create_tables()
+
+    with get_session() as session:
+        total_existente = session.scalar(select(func.count()).select_from(Paciente))
+
+        if total_existente:
+            return 0
+
+        return popular_banco(session, ler_prontuarios())
 
 
 def ler_prontuarios(caminho: Path = SYNTHETIC_DATA_PATH) -> list[dict]:

@@ -1,9 +1,13 @@
 """Ponto de entrada da API do CardioAssist AI."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, HTTPException, status
 
 from app.api.prontuario import router as prontuario_router
 from app.config import get_settings
+from app.database.seed import criar_dados_sinteticos
 from app.graph import run_graph
 from app.observability.audit import (
     iniciar_rastreio,
@@ -19,12 +23,22 @@ from app.security.personal_data import encontrar_dados_pessoais
 settings = get_settings()
 configurar_langsmith(settings)
 
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Prepara o banco antes de aceitar requisições."""
+    if settings.use_synthetic_data_only:
+        criar_dados_sinteticos()
+
+    yield
+
+
 app = FastAPI(
     title=settings.app_name,
     description="API educacional de apoio à decisão clínica em cardiologia.",
     version="0.1.0",
+    lifespan=lifespan,
 )
-
 
 app.include_router(prontuario_router)
 

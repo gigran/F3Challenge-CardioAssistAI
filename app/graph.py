@@ -68,7 +68,7 @@ INSTRUCTIONS = {
     "tratamento": "Responda esta pergunta que solicita informações de tratamento de uma doença",
     "sintomas": "Responda esta pergunta sobre os sintomas de uma doença",
     "diagnostico": "Responda esta pergunta sobre como realizar o diagnostico de uma doença.",
-    "fora_escopo": "Responda que a pergunta esta fora do escopo.",
+    "fora_escopo": "Não responda a pergunta, apenas informe que a mesma não faz parte do escopo desta aplicação",
 }
 
 RAG_REQUIRED = {
@@ -77,6 +77,7 @@ RAG_REQUIRED = {
     "sintomas": True,
     "frequencia": False,
     "informacao_geral": False,
+    "fora_escopo" : False,
 }
 
 SafetyStatus = Literal["revisao_obrigatoria", "atencao", "emergencia"]
@@ -246,6 +247,7 @@ def generate_node(state: GraphState) -> GraphState:
     answer = get_generation_chain(state["llm_provider"]).invoke(
         {
             "question": state["question"],
+            "instruction": state["instruction"],
             "context": context,
         }
     )
@@ -344,15 +346,15 @@ def get_graph() -> CompiledStateGraph:
 
 def run_graph(
     question: str,
-    llm_provider: str = "ollama",
+    llm_provider: str = "lora",
     patient_code: str = "",
 ) -> GraphOutput:
     """Executa o fluxo completo e devolve somente a saída pública."""
     normalized_question = question.strip()
     if not normalized_question:
         raise ValueError("A pergunta não pode estar vazia.")
-    if llm_provider not in {"ollama", "openai"}:
-        raise ValueError("llm_provider deve ser 'ollama' ou 'openai'.")
+    if llm_provider not in {"ollama", "openai", "lora"}:
+        raise ValueError("llm_provider deve ser 'ollama', 'lora' ou 'openai'.")
 
     result = get_graph().invoke(
         {

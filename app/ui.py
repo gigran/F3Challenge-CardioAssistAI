@@ -30,6 +30,7 @@ def request_assistance(
         },
         timeout=REQUEST_TIMEOUT_SECONDS,
     )
+
     response.raise_for_status()
     result = response.json()
 
@@ -111,7 +112,7 @@ def main() -> None:
     with st.sidebar:
         st.header("Configuração")
         api_url = st.text_input("Endereço da API", value=DEFAULT_API_URL)
-        provider_options = ["ollama", "openai"]
+        provider_options = ["ollama","lora", "openai"]
         default_provider_index = (
             provider_options.index(settings.llm_provider)
             if settings.llm_provider in provider_options
@@ -122,7 +123,8 @@ def main() -> None:
             options=provider_options,
             index=default_provider_index,
             format_func=lambda provider: {
-                "ollama": "Ollama — local e gratuito",
+                "ollama": "Ollama — Gratuita",
+                "lora": "Ollama — treinada",
                 "openai": "OpenAI — API paga",
             }[provider],
         )

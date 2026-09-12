@@ -72,10 +72,10 @@ class Settings:
 def get_settings() -> Settings:
     """Carrega, valida e mantém em cache as configurações da aplicação."""
     llm_provider = os.getenv("LLM_PROVIDER", "ollama").strip().lower()
-    supported_providers = {"ollama", "openai"}
+    supported_providers = {"ollama", "lora", "openai"}
 
     if llm_provider not in supported_providers:
-        raise ValueError("LLM_PROVIDER deve ser 'ollama' ou 'openai'.")
+        raise ValueError("LLM_PROVIDER deve ser 'ollama', 'lora' ou 'openai'.")
 
     return Settings(
         app_name=os.getenv("APP_NAME", "CardioAssist AI"),
@@ -92,7 +92,7 @@ def get_settings() -> Settings:
             "DATABASE_URL",
             "postgresql+psycopg://cardioassist:senha_local@localhost:5432/cardioassist",
         ),
-        rag_top_k=_read_positive_int("RAG_TOP_K", 4),
+        rag_top_k=_read_positive_int("RAG_TOP_K", 2),
         langsmith_tracing=_read_bool("LANGSMITH_TRACING", False),
         langsmith_api_key=os.getenv("LANGSMITH_API_KEY", ""),
         langsmith_project=os.getenv("LANGSMITH_PROJECT", "cardioassist-ai"),

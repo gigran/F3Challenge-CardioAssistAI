@@ -18,6 +18,7 @@ class LLMProvider(StrEnum):
 
     OLLAMA = "ollama"
     OPENAI = "openai"
+    LORA = "lora"
 
 
 class AssistRequest(BaseModel):

@@ -21,7 +21,7 @@ Quem lê a sua resposta é um profissional de saúde conduzindo o caso, e não o
 paciente. Escreva como quem apresenta um resumo técnico a um colega.
 
 Regras obrigatórias:
-- Use somente as informações presentes no contexto recuperado.
+- Use quando exista as informações presentes no contexto recuperado.
 - Se o contexto não for suficiente, declare explicitamente essa limitação.
 - Não invente dados do paciente, diagnósticos, exames ou fontes.
 - Não prescreva, inicie, suspenda ou altere medicamentos.
@@ -45,12 +45,13 @@ CLASSIFIER_SYSTEM_PROMPT = """
 Você classifica perguntas do CardioAssist AI em UMA categoria.
 
 Categorias e quando usar cada uma:
-- informacao_geral: pergunta especificamente conceitual sobre uma doença em geral.
+- informacao_geral: pergunta solicitando informação conceitual na area de saúde e não se enquadra em nenhuma outra categoria.
+- fora_escopo: pergunta ou informação que esta totalmente fora da áre de saúde.
 - sintomas: sinais e sintomas de uma condição.
 - frequencia: prevalência, incidência ou frequência de uma condição.
 - tratamento: como tratar, terapia ou conduta terapêutica.
 - diagnostico: como diagnosticar ou critérios diagnósticos.
-- fora_escopo: pedido que não é se encaixa em informação geral e não é da área clínica da cardiologia.
+
 
 Responda somente com a categoria e um grau de confiança entre 0 e 1.
 """.strip()
@@ -86,7 +87,7 @@ def format_documents(documents: list[Document]) -> str:
     return "\n\n".join(formatted_chunks)
 
 
-SUPPORTED_LLM_PROVIDERS = {"ollama", "openai"}
+SUPPORTED_LLM_PROVIDERS = {"ollama", "lora", "openai"}
 
 
 def create_chat_model(
@@ -105,6 +106,15 @@ def create_chat_model(
             model=current_settings.ollama_chat_model,
             base_url=current_settings.ollama_base_url,
             temperature=0,
+        )
+
+    if selected_provider == "lora":
+        from app.loramodel import load_lora_model, LoraChatModel
+        model, tokenizer = load_lora_model()
+        return LoraChatModel(
+            model=model,
+            tokenizer=tokenizer,
+            max_new_tokens=64,
         )
 
     api_key = current_settings.openai_api_key
@@ -140,7 +150,7 @@ class IntentResult(BaseModel):
     )
 
 
-@lru_cache(maxsize=3)
+@lru_cache(maxsize=1)
 def get_classification_chain(
     llm_provider: str,
 ) -> Runnable[dict[str, str], IntentResult]:
@@ -155,7 +165,7 @@ def get_classification_chain(
     return prompt | model.with_structured_output(IntentResult)
 
 
-@lru_cache(maxsize=2)
+@lru_cache(maxsize=3)
 def get_generation_chain(llm_provider: str) -> Runnable[dict[str, str], str]:
     """Monta e mantém em cache a cadeia LCEL de geração."""
     prompt = ChatPromptTemplate.from_messages(
@@ -164,6 +174,7 @@ def get_generation_chain(llm_provider: str) -> Runnable[dict[str, str], str]:
             (
                 "human",
                 (
+                    "Instrução:\n{instruction}\n\n"
                     "Pergunta:\n{question}\n\n"
                     "Contexto recuperado:\n{context}\n\n"
                     "Produza a resposta seguindo todas as regras de segurança."

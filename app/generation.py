@@ -11,6 +11,7 @@ from langchain_core.runnables import Runnable
 from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
+
 from app.config import Settings, get_settings
 from app.rag import format_source, retrieve_documents
 
@@ -21,7 +22,7 @@ Quem lê a sua resposta é um profissional de saúde conduzindo o caso, e não o
 paciente. Escreva como quem apresenta um resumo técnico a um colega.
 
 Regras obrigatórias:
-- Use quando exista as informações presentes no contexto recuperado.
+- Use somente as informações presentes no contexto recuperado.
 - Se o contexto não for suficiente, declare explicitamente essa limitação.
 - Não invente dados do paciente, diagnósticos, exames ou fontes.
 - Não prescreva, inicie, suspenda ou altere medicamentos.
@@ -109,7 +110,8 @@ def create_chat_model(
         )
 
     if selected_provider == "lora":
-        from app.loramodel import load_lora_model, LoraChatModel
+        from app.loramodel import LoraChatModel, load_lora_model
+
         model, tokenizer = load_lora_model()
         return LoraChatModel(
             model=model,

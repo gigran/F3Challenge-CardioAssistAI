@@ -8,6 +8,7 @@ from langchain_core.vectorstores import (
     VectorStoreRetriever,
 )
 
+
 def create_in_memory_vector_store(
     documents: list[Document],
     embeddings: Embeddings,
@@ -35,6 +36,7 @@ def create_retriever(
         raise ValueError("k deve ser maior que zero.")
 
     return vector_store.as_retriever(search_kwargs={"k": k})
+
 
 # def create_in_memory_vector_store(
 #     documents: list[Document],

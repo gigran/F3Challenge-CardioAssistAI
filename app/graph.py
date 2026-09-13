@@ -4,7 +4,7 @@ import operator
 import re
 import unicodedata
 from functools import lru_cache
-from typing import Annotated, Literal, TypedDict, cast, NotRequired
+from typing import Annotated, Literal, NotRequired, TypedDict, cast
 
 from langchain_core.documents import Document
 from langgraph.graph import END, START, StateGraph
@@ -13,8 +13,8 @@ from langgraph.graph.state import CompiledStateGraph
 from app.config import get_settings
 from app.generation import (
     format_documents,
-    get_generation_chain,
     get_classification_chain,
+    get_generation_chain,
 )
 from app.logger import monitor_node_execution
 from app.nodes.prontuario import (
@@ -77,7 +77,7 @@ RAG_REQUIRED = {
     "sintomas": True,
     "frequencia": False,
     "informacao_geral": False,
-    "fora_escopo" : False,
+    "fora_escopo": False,
 }
 
 SafetyStatus = Literal["revisao_obrigatoria", "atencao", "emergencia"]

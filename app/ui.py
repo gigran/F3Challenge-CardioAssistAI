@@ -112,7 +112,7 @@ def main() -> None:
     with st.sidebar:
         st.header("Configuração")
         api_url = st.text_input("Endereço da API", value=DEFAULT_API_URL)
-        provider_options = ["ollama","lora", "openai"]
+        provider_options = ["ollama", "lora", "openai"]
         default_provider_index = (
             provider_options.index(settings.llm_provider)
             if settings.llm_provider in provider_options

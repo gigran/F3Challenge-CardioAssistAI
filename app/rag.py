@@ -9,11 +9,10 @@ from langchain_core.embeddings import Embeddings
 from langchain_core.vectorstores import VectorStoreRetriever
 from langchain_ollama import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pypdf import PdfReader
 
 from app.config import PROJECT_ROOT, Settings, get_settings
 from app.vector_store import create_in_memory_vector_store, create_retriever
-
-from pypdf import PdfReader
 
 KNOWLEDGE_BASE_DIRECTORY = PROJECT_ROOT / "data" / "knowledge_base"
 

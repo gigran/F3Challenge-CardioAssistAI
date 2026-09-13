@@ -12,7 +12,6 @@ from langchain_core.messages import (
 from langchain_core.outputs import ChatGeneration, ChatResult
 from pydantic import PrivateAttr
 
-
 # Adaptador LoRA versionado junto do código, em data/loramodel.
 MODEL_PATH = Path(__file__).resolve().parent.parent / "data" / "loramodel"
 
@@ -47,32 +46,32 @@ class LoraChatModel(BaseChatModel):
     ) -> ChatResult:
         import torch
 
-        system_content = "" 
+        system_content = ""
         human_content = ""
 
-        for message in messages: 
-            if isinstance(message, SystemMessage): 
-                system_content = str(message.content) 
-            elif isinstance(message, HumanMessage): 
+        for message in messages:
+            if isinstance(message, SystemMessage):
+                system_content = str(message.content)
+            elif isinstance(message, HumanMessage):
                 human_content = str(message.content)
 
-        instruction = "" 
-        question = "" 
+        instruction = ""
+        question = ""
         context = ""
 
-        if "Instrução:" in human_content: 
-            instruction = human_content.split( "Instrução:", 1 )[1]
+        if "Instrução:" in human_content:
+            instruction = human_content.split("Instrução:", 1)[1]
 
-        if "Pergunta:" in instruction: 
-            instruction, question_part = instruction.split( "Pergunta:", 1 ) 
+        if "Pergunta:" in instruction:
+            instruction, question_part = instruction.split("Pergunta:", 1)
             question = question_part
 
-        if "Contexto recuperado:" in question: 
-            question, context = question.split( "Contexto recuperado:", 1 )    
+        if "Contexto recuperado:" in question:
+            question, context = question.split("Contexto recuperado:", 1)
 
-        instruction = instruction.strip() 
-        question = question.strip() 
-        context = context.strip()  
+        instruction = instruction.strip()
+        question = question.strip()
+        context = context.strip()
 
         prompt = f"""{system_content}
 
@@ -113,16 +112,14 @@ class LoraChatModel(BaseChatModel):
         ).strip()
 
         return ChatResult(
-            generations=[
-                ChatGeneration(
-                    message=AIMessage(content=response)
-                )
-            ]
+            generations=[ChatGeneration(message=AIMessage(content=response))]
         )
+
 
 @lru_cache(maxsize=1)
 def load_lora_model():
     from unsloth import FastLanguageModel
+
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name="unsloth/Qwen2.5-1.5B-Instruct-bnb-4bit",
         max_seq_length=1024,

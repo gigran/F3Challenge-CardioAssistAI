@@ -55,20 +55,24 @@ flowchart TD
     R --> KB[(Markdown em memória)]
     G --> L{Provedor da LLM}
     L --> O[Ollama]
+    L --> OL[lora]
     L --> OA[OpenAI opcional]
     G --> S[Segurança determinística]
     S --> UI
 ```
 
-O fluxo compilado do LangGraph possui três nós:
+O fluxo compilado do LangGraph possui seis nós:
 
 ```text
-retrieve → generate → safety
+[prontuario, exames_pendentes] → classify → [retrieve, generate] → safety
 ```
 
-1. `retrieve` recupera os documentos semanticamente relacionados à pergunta;
-2. `generate` monta o contexto e consulta a LLM usando uma cadeia LCEL;
-3. `safety` identifica sinais críticos e acrescenta alertas determinísticos.
+1. `prontuario` carrega o resumo do paciente se encontrado;
+2. `exames_pendentes` lista os examens pendentes que ainda não tem resultado;
+3. `classify` classifica a pergunta para saber a intenção e determinar a instrução e/ou uso do RAG;
+4. `retrieve` recupera os documentos semanticamente relacionados à pergunta;
+5. `generate` monta o contexto e consulta a LLM usando uma cadeia LCEL;
+6. `safety` identifica sinais críticos e acrescenta alertas determinísticos.
 
 O armazenamento vetorial atual é em memória. PostgreSQL com pgvector será introduzido
 quando adicionarmos pacientes, exames e persistência da base vetorial.
@@ -85,6 +89,8 @@ quando adicionarmos pacientes, exames e persistência da base vetorial.
 - HTTPX;
 - pytest;
 - Ruff.
+- unsloth
+- peft
 
 Tecnologias planejadas para etapas posteriores:
 
@@ -93,6 +99,9 @@ Tecnologias planejadas para etapas posteriores:
 - LangSmith para rastreamento e avaliação;
 - Docker;
 - Hugging Face, PEFT e LoRA/QLoRA.
+
+## Data set Utilizado no Treinamento 
+https://huggingface.co/datasets/recogna-nlp/drbode_dataset?utm_source=chatgpt.com
 
 ## Ambiente de desenvolvimento
 
@@ -389,9 +398,24 @@ F3Challenge-CardioAssistAI/
 │   ├── schemas.py
 │   └── ui.py
 ├── data/
+│   └── finetuning/
+|       ├── dataset_cardiologia_amostra.json
 │   └── knowledge_base/
 │       ├── dor_toracica.md
+│       └── Hipertensão Arterial Sistêmica.pdf
 │       └── hipertensao.md
+│   └── loramodel/
+│       ├── adapter_config.json
+│       └── adapter_model.safetensors
+│       └── chat_template.jinja
+│       └── tokenizer_config.json
+│       └── tokenizer.json
+│   └── synthetic/
+|       ├── prontuarios.json
+├── finetuning/
+│   └── finetuning_cardioassist.ipynb
+├── logs/
+│   └── cardioassist.log
 └── tests/
     ├── test_generation.py
     ├── test_graph.py
